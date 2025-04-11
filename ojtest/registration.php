@@ -1,6 +1,8 @@
 <?php
 session_start();
-require_once '../DBCONNECT.php';
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+require_once 'DBCONNECT.php';
 
 if (isset($_POST['register'])) {
     $sr_code = mysqli_real_escape_string($conn, $_POST['sr_code']);
@@ -13,8 +15,15 @@ if (isset($_POST['register'])) {
     $section = mysqli_real_escape_string($conn, $_POST['section']);
     $department = mysqli_real_escape_string($conn, $_POST['department']);
     
-    // Validation
     $errors = array();
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        array_push($errors, "Invalid email format");
+    }
+    
+    if (strlen($password) < 8) {
+        array_push($errors, "Password must be at least 8 characters long");
+    }
     
     if (empty($sr_code)) { array_push($errors, "SR Code is required"); }
     if (empty($firstname)) { array_push($errors, "First Name is required"); }
@@ -26,26 +35,32 @@ if (isset($_POST['register'])) {
     if (empty($section)) { array_push($errors, "Section is required"); }
     if (empty($department)) { array_push($errors, "Department is required"); }
     
-    // Check if SR Code already exists
-    $sr_check_query = "SELECT * FROM students WHERE sr_code='$sr_code' LIMIT 1";
-    $result = mysqli_query($conn, $sr_check_query);
+    $email_check_query = "SELECT * FROM students WHERE email='$email' LIMIT 1";
+    $result = mysqli_query($conn, $email_check_query);
     $user = mysqli_fetch_assoc($result);
     
     if ($user) {
-        if ($user['sr_code'] === $sr_code) {
-            array_push($errors, "SR Code already exists");
+        if ($user['email'] === $email) {
+            array_push($errors, "Email already exists");
         }
     }
     
-    // Register user if there are no errors
     if (count($errors) == 0) {
-        $password = password_hash($password, PASSWORD_DEFAULT); // Encrypt password
+        $password = password_hash($password, PASSWORD_DEFAULT);
         
         $query = "INSERT INTO students (sr_code, firstname, lastname, email, password, course, section, department) 
-                  VALUES('$sr_code', '$firstname', '$lastname', '$email', '$password', '$course', '$section', '$department')";
-        mysqli_query($conn, $query);
-        $_SESSION['success'] = "Registration successful! You can now login.";
-        header('location: ../login/login.php');
+                  VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+                  
+        $stmt = mysqli_prepare($conn, $query);
+        mysqli_stmt_bind_param($stmt, "ssssssss", $sr_code, $firstname, $lastname, $email, $password, $course, $section, $department);
+        
+        if (mysqli_stmt_execute($stmt)) {
+            $_SESSION['success'] = "Registration successful! You can now login.";
+            header('location: login.php');
+            exit();
+        } else {
+            array_push($errors, "Registration failed: " . mysqli_error($conn));
+        }
     }
 }
 ?>
@@ -57,13 +72,13 @@ if (isset($_POST['register'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Registration - BatState-U Lipa OJT Portal</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container registration-container">
         <div class="header text-center">
             <div class="logo-container">
-                <img src="../Pictures/BatStateU-NEU-Logo.png" alt="BatState-U Logo" class="logo">
+                <img src="BatStateU-NEU-Logo.png" alt="BatState-U Logo" class="logo">
             </div>
             <h2>BatState-U Lipa Campus</h2>
             <div class="title-divider"></div>
@@ -71,10 +86,21 @@ if (isset($_POST['register'])) {
         </div>
 
         <form method="POST" action="registration.php">
-            <?php if (isset($errors)): ?>
-                <?php foreach ($errors as $error): ?>
-                    <div class="alert alert-danger"><?php echo $error; ?></div>
-                <?php endforeach; ?>
+            <?php if (!empty($errors)): ?>
+                <div class="alert alert-danger">
+                    <?php foreach ($errors as $error): ?>
+                        <p class="mb-0"><?php echo htmlspecialchars($error); ?></p>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success">
+                    <?php 
+                        echo htmlspecialchars($_SESSION['success']);
+                        unset($_SESSION['success']);
+                    ?>
+                </div>
             <?php endif; ?>
 
             <div class="row">
@@ -121,12 +147,8 @@ if (isset($_POST['register'])) {
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="course">Course</label>
-                        <select class="form-control" id="course" name="course" required>
-                            <option value="">Select Course</option>
-                            <option value="BSIT">BS Information Technology</option>
-                            <option value="BSCS">BS Computer Science</option>
-                            <option value="BSIS">BS Information Systems</option>
-                        </select>
+                        <input type="text" class="form-control" id="course" name="course" 
+                               placeholder="e.g., BSIT" required>
                     </div>
                 </div>
                 <div class="col-md-3">

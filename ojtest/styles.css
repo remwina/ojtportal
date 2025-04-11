@@ -1,5 +1,5 @@
 body {
-    background-color: #fff1f1; /* Light pink-red background */
+    background-color: #fff1f1;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -26,7 +26,7 @@ body {
     border-bottom: 1px solid #eee;
     margin-bottom: 25px;
     padding-bottom: 15px;
-    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); /* Different shades of red */
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 2px 6px rgba(220, 53, 69, 0.1);
@@ -120,4 +120,97 @@ a:hover {
 }
 .mt-3 {
     margin-top: 1rem !important;
+}
+
+.sidebar {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 15px;
+}
+
+.logo {
+    width: 150px;
+    height: auto;
+    margin-bottom: 15px;
+}
+
+.logo-text {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #C8102E;
+    margin-bottom: 5px;
+}
+
+.logo-subtext {
+    font-size: 1rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.nav-link {
+    color: #333;
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+}
+
+.nav-link:hover {
+    background-color: #e9ecef;
+}
+
+.stats-card {
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+.job-card {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.2s;
+}
+
+.job-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.company-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.welcome-section {
+    text-align: center;
+    padding: 30px 0;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.welcome-section h2 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.welcome-section p {
+    color: #666;
+    font-size: 1.1rem;
+    margin-bottom: 0;
 }
