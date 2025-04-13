@@ -39,7 +39,7 @@ switch($step) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JobListing System Setup</title>
-    <link rel="stylesheet" href="/Finals_But_Its_ADBMS/JobListing/Assets/Styles/style.css">
+    <link rel="stylesheet" href="../../../../../Assets/Styles/style.css">
     <style>
         .setup-container {
             background: rgba(255, 255, 255, 0.95);
@@ -280,7 +280,7 @@ switch($step) {
             </div>
 
             <div class="text-center">
-                <a href="/Finals_But_Its_ADBMS/JobListing/Frontend/login.html" class="setup-btn">Go to Login Page</a>
+                <a href="../../../../../Frontend/login.html" class="setup-btn">Go to Login Page</a>
             </div>
         </div>
     </div>
