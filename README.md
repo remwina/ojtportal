@@ -1,62 +1,48 @@
-# Student Job Listing Platform
+# 🚀 JobListing Portal
 
-A web application for managing student job listings and applications.
+Welcome to our awesome JobListing Portal! Let's get you up and running in no time. 
 
-## Features
+## 🎯 Prerequisites
 
-- User Registration and Authentication
-- SR Code Validation
-- CSRF Protection
-- Secure Password Handling
-- Modern UI with Blob Animations
+Before we dive in, make sure you have:
+- XAMPP installed and running (Apache + MySQL)
+- Composer installed
+- A cup of coffee ☕ (optional but recommended)
 
-## Setup Instructions
+## 🔥 Quick Start Guide
 
-1. Clone the repository:
+### Step 1: Clone the Repository
 ```bash
-git clone [your-repository-url]
+git clone https://github.com/remwina/ojtportal.git
+cd ojtportal
 ```
 
-2. Set up your XAMPP environment:
-   - Place the project in your XAMPP's htdocs folder
-   - Start Apache and MySQL services
-
-3. Database Setup:
-   - Visit `http://localhost/Finals_But_Its_ADBMS/joblisting/Backend/Core/Config/migrate.php`
-   - This will create the necessary database and tables
-
-4. Access the application:
-   - Registration: `http://localhost/Finals_But_Its_ADBMS/joblisting/Frontend/register.html`
-   - Login: `http://localhost/Finals_But_Its_ADBMS/joblisting/Frontend/login.php`
-
-## Requirements
-
-- PHP 7.4 or higher
-- MySQL 5.7 or higher
-- XAMPP (or similar PHP development environment)
-- Modern web browser
-
-## Project Structure
-
+### Step 2: Run the Magic Setup Wizard ✨
+Navigate to:
 ```
-joblisting/
-├── Assets/
-│   ├── Scripts/
-│   └── Styles/
-├── Backend/
-│   ├── Core/
-│   │   ├── Config/
-│   │   └── Security/
-│   └── Shell/
-└── Frontend/
-    ├── register.html
-    └── login.php
+http://localhost/Finals_But_Its_ADBMS/JobListing/Backend/Core/Config/DataManagement/setup.php
 ```
 
-## Security Features
+Our friendly setup wizard will:
+1. 📦 Install all dependencies
+2. 🗄️ Set up your database
+3. 👑 Create an admin account
+4. 🎉 Get you ready to rock!
 
-- CSRF Protection
-- Password Hashing
-- Input Validation
-- SQL Injection Prevention
-- XSS Protection 
+### Step 3: Default Admin Login
+Once setup is complete, you can log in with:
+- 📧 Email: admin@admin.com
+- 🔑 Password: admin123
+- 🆔 SR Code: 21-00001
+
+## 🛠️ Troubleshooting
+
+Getting errors? Try these:
+1. Make sure XAMPP is running (Apache + MySQL)
+2. Check if your MySQL password matches in `DB_Operations.php`
+3. Clear your browser cache
+4. Try turning it off and on again (yes, seriously!)
+
+## 🌟 Credits
+
+Built with ❤️ by Me — d.btchh
