@@ -20,7 +20,7 @@ cd ojtportal
 ### Step 2: Run the Magic Setup Wizard ✨
 Navigate to:
 ```
-http://localhost/Finals_But_Its_ADBMS/JobListing/Backend/Core/Config/DataManagement/setup.php
+http://localhost/ojtportal/Finals_But_Its_ADBMS/JobListing/Backend/Core/Config/DataManagement/setup.php
 ```
 
 Our friendly setup wizard will:
