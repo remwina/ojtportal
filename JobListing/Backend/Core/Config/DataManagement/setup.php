@@ -6,9 +6,9 @@ ini_set('display_errors', 1);
 // Function to check if dependencies are installed
 function areDependenciesInstalled() {
     // Return true to simulate installed dependencies
-    return true;
+    // return true;
     // For production, uncomment the line below:
-    // return file_exists(__DIR__ . '/../../../../../vendor/autoload.php');
+    return file_exists(__DIR__ . '/../../../../../vendor/autoload.php');
 }
 
 // Check current step
