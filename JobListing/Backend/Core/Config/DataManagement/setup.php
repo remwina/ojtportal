@@ -39,8 +39,140 @@ switch($step) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JobListing System Setup</title>
-    <link rel="stylesheet" href="../../../../../Assets/Styles/style.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary-red: #ff3b3b;
+            --dark-red: #e63535;
+            --light-red: #ff6666;
+            --white: #ffffff;
+            --off-white: #f8f9fc;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            background: var(--off-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-700);
+            line-height: 1.5;
+            position: relative;
+            overflow: hidden;
+            background-color: #fff;
+        }
+
+        @keyframes blob1 {
+            0% { transform: translate(0, 0) scale(1); }
+            20% { transform: translate(150px, -50px) scale(1.6); }
+            40% { transform: translate(-80px, 120px) scale(0.4); }
+            60% { transform: translate(100px, 80px) scale(1.8); }
+            80% { transform: translate(-120px, -90px) scale(0.5); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        @keyframes blob2 {
+            0% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-130px, 60px) scale(1.7); }
+            50% { transform: translate(90px, -120px) scale(0.3); }
+            75% { transform: translate(-60px, -80px) scale(1.5); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        body::before,
+        body::after,
+        .blob {
+            content: '';
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: linear-gradient(to right, rgba(255, 0, 0, 0.2), rgba(255, 51, 51, 0.15));
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(50px);
+        }
+
+        body::before {
+            left: calc(50% - 500px);
+            top: calc(50% - 400px);
+            animation: blob1 12s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background: linear-gradient(-45deg, rgba(255, 0, 0, 0.25), rgba(255, 51, 51, 0.18));
+            z-index: 1;
+        }
+
+        body::after {
+            right: calc(50% - 500px);
+            bottom: calc(50% - 400px);
+            animation: blob2 14s cubic-bezier(0.36, 0, 0.64, 1) infinite;
+            background: linear-gradient(45deg, rgba(255, 0, 0, 0.3), rgba(255, 51, 51, 0.2));
+            z-index: 2;
+        }
+
+        h1 {
+            color: var(--gray-700);
+            margin: 0 0 0.5rem 0;
+            font-size: 2.25rem;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--gray-600);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .error-message {
+            color: var(--primary-red);
+            background: rgba(255, 59, 59, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-4 {
+            margin-bottom: 1.5rem;
+        }
+
+        h3 {
+            color: var(--gray-700);
+            margin: 0 0 1rem 0;
+        }
+
+        ol {
+            padding-left: 1.5rem;
+        }
+
+        ol li {
+            margin-bottom: 1rem;
+        }
+
+        .mb-0 {
+            margin-bottom: 0;
+        }
+
         .setup-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
