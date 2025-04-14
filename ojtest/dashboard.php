@@ -245,7 +245,7 @@ $student_name = $_SESSION['student_name'];
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 sidebar">
                 <div class="logo-container">
-                    <img src="BatStateU-NEU-Logo.png" alt="BatStateU-NEU Logo" class="logo">
+                    <img src="../ojtest/assets/BatStateU-NEU-Logo.png" alt="BatStateU-NEU Logo" class="logo">
                     <div class="logo-text">BatState-U NEU</div>
                     <div class="logo-subtext">OJT Portal</div>
                 </div>

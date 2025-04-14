@@ -1,15 +1,12 @@
 <?php
+$servername = "localhost:3307";
+$username = "root";
+$password = "";
+$dbname = "ojt_portal";
 
-$hostname = "localhost";     
-$username = "root";          
-$password = "";              
-$database = "ojt_portal"; 
+$conn = new mysqli($servername, $username, $password, $dbname);
 
-$conn = mysqli_connect($hostname, $username, $password, $database);
-
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
-
-mysqli_set_charset($conn, "utf8");
 ?>
