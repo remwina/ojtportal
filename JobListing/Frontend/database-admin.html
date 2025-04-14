@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Management</title>
+    <link rel="stylesheet" href="../Assets/Styles/style.css">
+    <link rel="stylesheet" href="../Assets/Styles/loading.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .admin-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            min-width: 180px;
+            justify-content: center;
+        }
+
+        .create-btn {
+            background-color: #10b981;
+            color: var(--white);
+        }
+
+        .create-btn:hover {
+            background-color: #059669;
+        }
+
+        .reset-btn {
+            background-color: var(--primary-red);
+            color: var(--white);
+        }
+
+        .reset-btn:hover {
+            background-color: var(--dark-red);
+        }
+
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .admin-btn:disabled {
+            background-color: var(--gray-300);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .admin-btn i {
+            font-size: 1.25rem;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .error {
+            background-color: rgba(255, 59, 59, 0.1);
+            color: var(--primary-red);
+            border: 1px solid var(--primary-red);
+        }
+
+        .console-output {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border-radius: 12px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="blob"></div>
+    <div class="form-section">
+        <h1>Database Management</h1>
+        <div class="button-group">
+            <button id="createBtn" class="admin-btn create-btn">
+                <span class="btn-text">
+                    <i class="fas fa-database"></i>
+                    Create Database
+                </span>
+                <span class="btn-loader">
+                    <svg class="spinner" viewBox="0 0 50 50">
+                        <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                    </svg>
+                </span>
+            </button>
+            <button id="resetBtn" class="admin-btn reset-btn">
+                <span class="btn-text">
+                    <i class="fas fa-trash-alt"></i>
+                    Reset Database
+                </span>
+                <span class="btn-loader">
+                    <svg class="spinner" viewBox="0 0 50 50">
+                        <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                    </svg>
+                </span>
+            </button>
+        </div>
+        <div id="statusMessage" class="status-message"></div>
+        <div id="consoleOutput" class="console-output"></div>
+        <input type="hidden" id="csrf_token" value="">
+        
+        <div class="return-link" style="margin-top: 20px; text-align: center;">
+            <a href="placeholder.html" class="admin-btn" style="text-decoration: none; background-color: #4a5568; color: white; display: inline-flex;">
+                <span class="btn-text">
+                    <i class="fas fa-arrow-left"></i>
+                    Return to Placeholder
+                </span>
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+    <script src="../Assets/Scripts/csrf.js"></script>
+    <script src="../Assets/Scripts/loading.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const createBtn = document.getElementById('createBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            const consoleOutput = document.getElementById('consoleOutput');
+
+            createBtn.addEventListener('click', () => 
+                handleDatabaseOperation(createBtn, statusMessage, consoleOutput, false)
+            );
+            
+            resetBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset the database? This will delete all existing data.')) {
+                    handleDatabaseOperation(resetBtn, statusMessage, consoleOutput, true);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

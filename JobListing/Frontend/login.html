@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login</title>
+    <link rel="stylesheet" href="../Assets/Styles/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.0/sweetalert.min.js"></script>
+    <script src="../Assets/Scripts/csrf.js"></script>
+    <script src="../Assets/Scripts/alert.js"></script>
+</head>
+
+<body>
+    <div class="blob"></div>
+    <div class="form-section">
+        <h1>Login</h1>
+        <p class="subtitle">Welcome back! Please login to access your account.</p>
+        <div id="alert" class="alert"></div>
+        <form action="../Backend/Core/MAIN.php" method="POST" novalidate>
+            <input type="hidden" name="action" value="login">
+            <input type="hidden" name="csrf_token" id="csrf_token" value="">
+            
+            <div class="form-group">
+                <label for="srcode">SR Code:</label>
+                <input type="text" 
+                       id="srcode" 
+                       name="srcode" 
+                       placeholder="Enter SR Code" 
+                       required
+                       maxlength="9">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       placeholder="Enter your password" 
+                       required
+                       minlength="8"
+                       autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="register-btn">
+                <span class="btn-text">Login</span>
+                <span class="btn-loader" style="display: none;">
+                    <svg class="spinner" viewBox="0 0 50 50">
+                        <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                    </svg>
+                </span>
+            </button>
+        </form>
+        <div class="sign-in-link">
+            <p>Don't have an account? <a href="register.html">Register here</a></p>
+        </div>
+    </div>
+</body>
+
+</html> 
