@@ -4,8 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Placeholder</title>
+    <title>Admin Dashboard</title>
     <link rel="stylesheet" href="../Assets/Styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             overflow: auto !important;
@@ -17,43 +18,134 @@
             margin: 2rem auto;
             max-width: 1000px;
         }
+
+        .stats-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background: var(--primary-red);
+            color: var(--white);
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--gray-200);
+            transform: translateY(-1px);
+        }
+
+        .database-btn {
+            background: #4a5568;
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+
+        .database-btn:hover {
+            background: #2d3748;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .database-btn i {
+            font-size: 1.2rem;
+        }
     </style>
+
+    <script>
+        // Check authentication and role before page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('../Backend/Core/MAIN.php?action=checkAdmin');
+                const data = await response.json();
+                
+                if (!data.isAdmin) {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
 </head>
 
 <body>
     <div class="blob"></div>
     <div class="form-section">
-        <h1>Dashboard Placeholder</h1>
-        <p class="subtitle">Welcome to your dashboard! This is a placeholder page that will be replaced with the actual dashboard functionality.</p>
+        <h1>Admin Control Panel</h1>
+        <p class="subtitle">Welcome Administrator! Manage job listings and user accounts from this dashboard.</p>
         
-        <div style="text-align: center; margin-top: 2rem;">
-            <p style="margin-bottom: 1.5rem; font-size: 1.1rem;">The dashboard will provide you with a comprehensive view of your job listings, applications, and account settings.</p>
-            
+        <div style="text-align: center; margin-top: 2rem;">            
             <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin: 2rem 0;">
                 <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; width: 220px; box-shadow: var(--shadow-md);">
                     <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">📊</div>
-                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">Job Listings</h3>
-                    <p style="font-size: 0.9rem; color: var(--gray-600);">View and manage all your job listings in one place.</p>
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">Job Management</h3>
+                    <p style="font-size: 0.9rem; color: var(--gray-600);">Post and manage job listings</p>
+                    <span class="stats-badge">0 Active Jobs</span>
+                    <div style="margin-top: 1rem;">
+                        <a href="#" class="action-btn">Post New Job</a>
+                    </div>
                 </div>
                 
                 <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; width: 220px; box-shadow: var(--shadow-md);">
-                    <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">📝</div>
-                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">Applications</h3>
-                    <p style="font-size: 0.9rem; color: var(--gray-600);">Track and respond to job applications from candidates.</p>
+                    <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">👥</div>
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">User Management</h3>
+                    <p style="font-size: 0.9rem; color: var(--gray-600);">Monitor and manage user accounts</p>
+                    <span class="stats-badge">0 Users</span>
+                    <div style="margin-top: 1rem;">
+                        <a href="#" class="action-btn">View Users</a>
+                    </div>
                 </div>
                 
                 <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; width: 220px; box-shadow: var(--shadow-md);">
-                    <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">⚙️</div>
-                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">Settings</h3>
-                    <p style="font-size: 0.9rem; color: var(--gray-600);">Customize your profile and account preferences.</p>
+                    <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">📈</div>
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">Analytics</h3>
+                    <p style="font-size: 0.9rem; color: var(--gray-600);">View application statistics</p>
+                    <span class="stats-badge">0 Applications</span>
+                    <div style="margin-top: 1rem;">
+                        <a href="#" class="action-btn">View Stats</a>
+                    </div>
                 </div>
             </div>
+
+            <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; margin: 2rem auto; max-width: 600px; box-shadow: var(--shadow-md);">
+                <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-700);">Recent Activity</h3>
+                <p style="color: var(--gray-600); font-style: italic;">No recent activity to display.</p>
+            </div>
             
-            <a href="login.html" class="register-btn" style="display: inline-block; text-decoration: none; margin-top: 1rem;">
-                <span class="btn-text">Back to Login</span>
-            </a>
+            <div style="display: flex; justify-content: center; gap: 1rem;">
+                <a href="database-admin.html" class="database-btn">
+                    <i class="fas fa-database"></i>
+                    Database Management
+                </a>
+                <a href="login.html" class="submit-btn" style="display: inline-flex; text-decoration: none; margin-top: 1rem;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Sign Out
+                </a>
+            </div>
         </div>
     </div>
 </body>
 
-</html> 
+</html>

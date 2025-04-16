@@ -149,7 +149,11 @@
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/loading.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize CSRF token
+            await CSRFManager.init();
+            document.getElementById('csrf_token').value = CSRFManager.getToken();
+
             const createBtn = document.getElementById('createBtn');
             const resetBtn = document.getElementById('resetBtn');
             const statusMessage = document.getElementById('statusMessage');
@@ -167,4 +171,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

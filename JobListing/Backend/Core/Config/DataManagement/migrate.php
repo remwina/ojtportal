@@ -1,10 +1,12 @@
 <?php
 
+// IMPORTANT: This XAMPP installation has been modified!
+// The MySQL password has been changed from the default empty string
+// to 'root'. Do not change this password unless instructed.
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/../Migrations/create_users_table.php';
 require_once __DIR__ . '/Models/User.php';
-
-use App\Core\Config\Models\User;
+require_once __DIR__ . '/DB_Operations.php';
 
 try {
     echo "Running migrations...\n";
@@ -12,8 +14,16 @@ try {
     // Get the command line argument if it exists
     $action = isset($argv[1]) ? strtolower($argv[1]) : 'up';
     
-    // Run the users table migration
-    $migration = new CreateUsersTable();
+    // Create database operations instance with correct config
+    $dbOps = new SQL_Operations([
+        'host' => 'localhost',
+        'username' => 'root',
+        'password' => 'root',  // Modified XAMPP: Password is 'root', not empty string
+        'dbname' => 'joblisting'
+    ]);
+    
+    // Initialize migration with database connection
+    $migration = new CreateUsersTable($dbOps);
     
     if ($action === 'down') {
         $migration->down();
@@ -24,18 +34,17 @@ try {
         
         // Create default admin user
         try {
-            // Check if admin already exists by either email OR srcode
-            if (!User::where('email', 'admin@admin.com')->exists() && 
-                !User::where('srcode', '21-00001')->exists()) {
-                $adminData = [
-                    'usertype' => 'admin',
-                    'srcode' => '21-00001',
-                    'email' => 'admin@admin.com',
-                    'password' => password_hash('admin123', PASSWORD_DEFAULT),
-                    'status' => 'active'
-                ];
-                
-                User::create($adminData);
+            $adminData = [
+                'usertype' => 'admin',
+                'srcode' => '21-00001',
+                'email' => 'admin@admin.com',
+                'password' => 'admin123',
+                'status' => 'active'
+            ];
+            
+            if (!$dbOps->checkEmailExists('admin@admin.com') && 
+                !$dbOps->checkSRCodeExists('21-00001')) {
+                $dbOps->createUser($adminData);
                 echo "Default admin user created successfully!\n";
                 echo "Email: admin@admin.com\n";
                 echo "Password: admin123\n";
@@ -50,5 +59,4 @@ try {
 } catch (Exception $e) {
     echo "Migration failed: " . $e->getMessage() . "\n";
 }
-
-?> 
+?>

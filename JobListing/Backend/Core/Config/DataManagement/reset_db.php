@@ -1,29 +1,28 @@
 <?php
-header('Content-Type: application/json');
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+require_once __DIR__ . '/DB_Operations.php';
 
 try {
-    require_once __DIR__ . '/Database.php';
-    require_once __DIR__ . '/DB_Operations.php';
-
-    // Get POST data
-    $input = json_decode(file_get_contents('php://input'), true);
-    $reset = isset($input['reset']) ? $input['reset'] : false;
-
-    // Initialize database connection
-    if ($reset) {
-        $result = DB_Operations::setup(true);
-        echo json_encode($result);
-    } else {
-        $result = DB_Operations::setup(false);
-        echo json_encode($result);
-    }
+    $dbOps = new SQL_Operations();
+    $conn = $dbOps->getConnection();
+    
+    // Drop users table
+    $conn->query("DROP TABLE IF EXISTS users");
+    
+    // Reinitialize database with fresh tables and default admin
+    $result = $dbOps->initDatabase();
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'message' => 'Database has been reset and reinitialized with default admin user'
+    ]);
 
 } catch (Exception $e) {
+    header('Content-Type: application/json');
+    http_response_code(500);
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage()
     ]);
 }
-?> 
+?>

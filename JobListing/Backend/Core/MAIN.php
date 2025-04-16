@@ -1,108 +1,147 @@
 <?php
-require_once __DIR__ . '/../Shell/Register.php';
-require_once __DIR__ . '/../Shell/Login.php';
+require_once __DIR__ . '/Config/DataManagement/DB_Connect.php';
+require_once __DIR__ . '/Config/DataManagement/DB_Operations.php';
 require_once __DIR__ . '/Security/TokenHandler.php';
+require_once __DIR__ . '/../Shell/Login.php';
+require_once __DIR__ . '/../Shell/Register.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" || $_SERVER['REQUEST_METHOD'] == "GET") {
-    try {
-        header('Content-Type: application/json');
-        
-        $Register = new UserReg();
-        $Login = new Login();
-
-        $action = null;
-        $data = [];
-
-        if ($_SERVER["REQUEST_METHOD"] == "POST") {
-            if (isset($_POST['action'])) {
-                $action = htmlspecialchars($_POST['action'], ENT_QUOTES, 'UTF-8');
-                $data = $_POST;
-            } else {
-                $jsonData = json_decode(file_get_contents('php://input'), true);
-                if ($jsonData === null && json_last_error() !== JSON_ERROR_NONE) {
-                    throw new Exception("Invalid JSON data received");
-                }
-                $action = $jsonData['action'] ?? null;
-                $data = $jsonData;
-            }
-        } else {
-            $action = isset($_GET['action']) ? htmlspecialchars($_GET['action'], ENT_QUOTES, 'UTF-8') : null;
-            $data = $_GET;
-        }
-
-        if (empty($action)) {
-            throw new Exception("No action specified");
-        }
-
-        switch ($action) {
-            case 'getToken':
-                echo json_encode([
-                    "success" => true,
-                    "token" => TokenHandler::generateToken()
-                ]);
-                break;
-
-            case 'register':
-                $token = $data['csrf_token'] ?? '';
-                if (!TokenHandler::validateToken($token)) {
-                    throw new Exception("Invalid security token");
-                }
-
-                $usertype = $data['usertype'] ?? null;
-                $srcode = $data['srcode'] ?? null;
-                $email = $data['email'] ?? null;
-                $password = $data['password'] ?? null;
-                $conpass = $data['conpass'] ?? null;
-
-                $result = $Register->registerUser($usertype, $srcode, $email, $password, $conpass);
-                echo json_encode($result);
-                break;
-
-            case 'login':
-                $token = $data['csrf_token'] ?? '';
-                if (!TokenHandler::validateToken($token)) {
-                    throw new Exception("Invalid security token");
-                }
-
-                $srcode = $data['srcode'] ?? null;
-                $password = $data['password'] ?? null;
-
-                if (empty($srcode) || empty($password)) {
-                    throw new Exception("SR Code and password are required");
-                }
-
-                $result = $Login->loginUser($srcode, $password);
-                echo json_encode($result);
-                break;
-
-            case 'checkAdmin':
-                session_start();
-                $response = array();
-                
-                if (isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin') {
-                    $response['isAdmin'] = true;
-                } else {
-                    $response['isAdmin'] = false;
-                }
-                
-                echo json_encode($response);
-                exit;
-                break;
-
-            default:
-                throw new Exception("Invalid action: " . $action);
-        }
-    } catch (Exception $e) {
-        http_response_code(400);
-        echo json_encode([
-            "success" => false,
-            "message" => $e->getMessage()
-        ]);
-    } catch (Error $e) {
-        http_response_code(500);
-        echo json_encode([
-            "success" => false,
-            "message" => "Server error: " . $e->getMessage()
-        ]);
-    }
+// Initialize session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
+
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+header('Content-Type: application/json');
+
+try {
+    error_log("Request received: " . print_r($_REQUEST, true));
+    
+    // Get the action from POST or GET
+    $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : ($_GET['action'] ?? null);
+    $data = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
+    
+    // Skip CSRF verification for login and csrf_init actions
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, ['login', 'csrf_init'])) {
+        if (!isset($_POST['csrf_token'])) {
+            error_log("CSRF token missing");
+            throw new Exception("CSRF token missing");
+        }
+        if (!TokenHandler::verifyToken($_POST['csrf_token'])) {
+            error_log("Invalid CSRF token");
+            throw new Exception("Invalid security token");
+        }
+    }
+
+    if (!$action) {
+        error_log("No action specified in request");
+        throw new Exception("No action specified");
+    }
+
+    error_log("Processing action: " . $action);
+    
+    // Route to appropriate handler
+    $response = null;
+    
+    switch($action) {
+        case 'init_db':
+            try {
+                $dbOps = new SQL_Operations();
+                $result = $dbOps->initDatabase();
+                $response = [
+                    "success" => true,
+                    "message" => "Database initialized successfully"
+                ];
+            } catch (Exception $e) {
+                throw new Exception("Database initialization failed: " . $e->getMessage());
+            }
+            break;
+            
+        case 'csrf_init':
+            $response = [
+                'success' => true,
+                'csrf_token' => TokenHandler::generateToken()
+            ];
+            break;
+            
+        case 'csrf':
+            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                $response = [
+                    'success' => true,
+                    'csrf_token' => TokenHandler::generateToken()
+                ];
+            } else {
+                throw new Exception("CSRF token can only be requested via GET");
+            }
+            break;
+            
+        case 'login':
+            $loginShell = new Login();
+            $response = $loginShell->loginUser(
+                $data['email'] ?? '',
+                $data['password'] ?? ''
+            );
+            error_log("Login response: " . print_r($response, true));
+            
+            if ($response['success']) {
+                // Generate new CSRF token after login
+                $response['csrf_token'] = TokenHandler::generateToken();
+            }
+            break;
+            
+        case 'register':
+            $registerShell = new UserReg();
+            $response = $registerShell->registerUser(
+                $data['usertype'] ?? 'none',
+                $data['srcode'] ?? '',
+                $data['email'] ?? '',
+                $data['password'] ?? '',
+                $data['confirm_password'] ?? ''  // Changed from null to empty string default
+            );
+            error_log("Register response: " . print_r($response, true));
+            
+            if ($response['success']) {
+                // Generate CSRF token for the new user
+                $response['csrf_token'] = TokenHandler::generateToken();
+            }
+            break;
+            
+        case 'checkAdmin':
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            
+            $response = [
+                'isAdmin' => isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'admin'
+            ];
+            break;
+
+        case 'checkAuth':
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            
+            $response = [
+                'isAuthenticated' => isset($_SESSION['user_id']),
+                'usertype' => $_SESSION['usertype'] ?? null
+            ];
+            break;
+            
+        default:
+            error_log("Invalid action received: " . $action);
+            throw new Exception("Invalid action: " . $action);
+    }
+    
+    echo json_encode($response);
+    
+} catch (Exception $e) {
+    error_log("Error in MAIN.php: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+    http_response_code(400);
+    echo json_encode([
+        "success" => false,
+        "message" => $e->getMessage()
+    ]);
+}
+?>

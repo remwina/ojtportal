@@ -81,37 +81,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Add artificial delay for better UX
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            const csrfToken = document.getElementById('csrf_token').value;
+            const formData = new FormData();
+            formData.append('reset', reset);
+            formData.append('csrf_token', CSRFManager.getToken());
+
             const response = await fetch('../Backend/Core/Config/DataManagement/reset_db.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({ reset: reset })
+                body: formData
             });
 
-            const text = await response.text();
-            showConsoleOutput(consoleOutput, text);
-
-            try {
-                const data = JSON.parse(text);
-                if (data.success) {
-                    await showMessage(statusMessage, reset ? 
-                        'Database has been reset successfully!' : 
-                        'Database has been created successfully!');
-                } else {
-                    await showMessage(statusMessage, data.message || 'Operation failed', true);
-                }
-            } catch (e) {
-                if (text.toLowerCase().includes('error')) {
-                    await showMessage(statusMessage, 'Operation failed. Check the console output below.', true);
-                } else if (text.toLowerCase().includes('success')) {
-                    await showMessage(statusMessage, reset ? 
-                        'Database has been reset successfully!' : 
-                        'Database has been created successfully!');
-                }
+            const data = await response.json();
+            
+            if (data.success) {
+                await showMessage(statusMessage, reset ? 
+                    'Database has been reset successfully!' : 
+                    'Database has been created successfully!');
+            } else {
+                await showMessage(statusMessage, data.message || 'Operation failed', true);
             }
+
+            if (data.details) {
+                showConsoleOutput(consoleOutput, JSON.stringify(data.details, null, 2));
+            }
+
         } catch (error) {
             console.error('Error:', error);
             await showMessage(statusMessage, 'An error occurred: ' + error.message, true);
@@ -125,4 +117,4 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.showConsoleOutput = showConsoleOutput;
     window.setLoading = setLoading;
     window.handleDatabaseOperation = handleDatabaseOperation;
-}); 
+});

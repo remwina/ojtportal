@@ -6,33 +6,21 @@ class TokenHandler {
             session_start();
         }
         
-        // Generate a new token if one doesn't exist
-        if (!isset($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-        
-        return $_SESSION['csrf_token'];
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token'] = $token;
+        return $token;
     }
 
-    public static function validateToken($token) {
+    public static function verifyToken($token) {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         
-        if (!isset($_SESSION['csrf_token']) || empty($token)) {
+        if (!isset($_SESSION['csrf_token'])) {
             return false;
         }
         
         return hash_equals($_SESSION['csrf_token'], $token);
     }
-
-    public static function refreshToken() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        return $_SESSION['csrf_token'];
-    }
 }
-?> 
+?>

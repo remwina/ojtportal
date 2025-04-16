@@ -1,40 +1,135 @@
 <?php
+declare(strict_types=1);
+
+// Start session at the very beginning
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 header('Content-Type: text/html');
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', '1');
 
-// Function to check if dependencies are installed
-function areDependenciesInstalled() {
-    // Return true to simulate installed dependencies
-    // return true;
-    // For production, uncomment the line below:
-    return file_exists(__DIR__ . '/../../../../../vendor/autoload.php');
-}
+require_once __DIR__ . '/DB_Operations.php';
 
-// Check current step
-$step = isset($_GET['step']) ? $_GET['step'] : 'check_dependencies';
-$message = '';
-$error = '';
+class SetupManager {
+    private const REQUIRED_PHP_VERSION = '7.4.0';
+    private const REQUIRED_EXTENSIONS = ['mysqli', 'pdo', 'pdo_mysql', 'mbstring'];
+    private string $step;
+    private ?string $error = null;
+    private ?string $message = null;
+    private ?SQL_Operations $dbOps = null;
 
-// Handle steps
-switch($step) {
-    case 'run_migration':
-        if (areDependenciesInstalled()) {
-            try {
-                ob_start();
-                require_once __DIR__ . '/migrate.php';
-                ob_end_clean();
-                $message = "Database setup completed successfully!";
-                $step = 'complete';
-            } catch (Exception $e) {
-                $error = $e->getMessage();
-                $step = 'error';
+    public function __construct() {
+        $this->step = $_GET['step'] ?? 'check_system';
+        
+        try {
+            // Only validate POST requests
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $this->validateRequest();
             }
-        } else {
-            $step = 'check_dependencies';
+            
+            // Initialize database operations
+            $this->dbOps = new SQL_Operations();
+        } catch (Exception $e) {
+            $this->error = $e->getMessage();
+            $this->step = 'error';
         }
-        break;
+
+        // Generate new token if one doesn't exist
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+    }
+
+    private function validateRequest(): void {
+        if (!isset($_SESSION['csrf_token']) || !isset($_POST['csrf_token']) || 
+            !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+            throw new RuntimeException('Invalid CSRF token');
+        }
+        // Generate new token after successful validation
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    private function checkSystemRequirements(): array {
+        $issues = [];
+        
+        // Check PHP version
+        if (version_compare(PHP_VERSION, self::REQUIRED_PHP_VERSION, '<')) {
+            $issues[] = "PHP version " . self::REQUIRED_PHP_VERSION . " or higher is required. Current version: " . PHP_VERSION;
+        }
+
+        // Check extensions
+        foreach (self::REQUIRED_EXTENSIONS as $ext) {
+            if (!extension_loaded($ext)) {
+                $issues[] = "Required PHP extension missing: {$ext}";
+            }
+        }
+
+        // Check MySQL connection
+        try {
+            if ($this->dbOps) {
+                $this->dbOps->getConnection();
+            } else {
+                $issues[] = "Database connection not initialized";
+            }
+        } catch (Exception $e) {
+            $issues[] = "Database connection failed: " . $e->getMessage();
+        }
+
+        return $issues;
+    }
+
+    public function handleSetup(): void {
+        try {
+            switch ($this->step) {
+                case 'check_system':
+                    $issues = $this->checkSystemRequirements();
+                    if (empty($issues)) {
+                        $this->step = 'run_migration';
+                        $this->message = "System requirements met!";
+                    } else {
+                        $this->error = "System requirements not met:\n" . implode("\n", $issues);
+                    }
+                    break;
+
+                case 'run_migration':
+                    if (isset($_POST['confirm'])) {
+                        if ($this->dbOps) {
+                            $this->dbOps->initDatabase();
+                            $this->message = "Database setup completed successfully!";
+                            $this->step = 'complete';
+                        } else {
+                            throw new Exception("Database operations not initialized");
+                        }
+                    }
+                    break;
+            }
+        } catch (Exception $e) {
+            $this->error = $e->getMessage();
+            $this->step = 'error';
+        }
+    }
+
+    public function getStep(): string {
+        return $this->step;
+    }
+
+    public function getError(): ?string {
+        return $this->error;
+    }
+
+    public function getMessage(): ?string {
+        return $this->message;
+    }
+
+    public function getCsrfToken(): string {
+        return $_SESSION['csrf_token'];
+    }
 }
+
+$setupManager = new SetupManager();
+$setupManager->handleSetup();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -335,24 +430,24 @@ switch($step) {
         <p class="subtitle">Follow the steps below to set up your system</p>
         
         <div class="step-indicators">
-            <div class="step-indicator <?php echo in_array($step, ['check_dependencies', 'run_migration', 'complete']) ? 'active' : ''; ?>">
+            <div class="step-indicator <?php echo in_array($setupManager->getStep(), ['check_system', 'run_migration', 'complete']) ? 'active' : ''; ?>">
                 <div class="step-circle">1</div>
-                <div class="step-label">Dependencies</div>
+                <div class="step-label">System Check</div>
             </div>
-            <div class="step-indicator <?php echo in_array($step, ['run_migration', 'complete']) ? 'active' : ''; ?>">
+            <div class="step-indicator <?php echo in_array($setupManager->getStep(), ['run_migration', 'complete']) ? 'active' : ''; ?>">
                 <div class="step-circle">2</div>
                 <div class="step-label">Database</div>
             </div>
-            <div class="step-indicator <?php echo $step === 'complete' ? 'active' : ''; ?>">
+            <div class="step-indicator <?php echo $setupManager->getStep() === 'complete' ? 'active' : ''; ?>">
                 <div class="step-circle">3</div>
                 <div class="step-label">Complete</div>
             </div>
         </div>
 
-        <?php if ($error): ?>
+        <?php if ($setupManager->getError()): ?>
         <div class="error-message">
             <h4>Error Occurred</h4>
-            <p><?php echo htmlspecialchars($error); ?></p>
+            <p><?php echo htmlspecialchars($setupManager->getError()); ?></p>
             <hr>
             <p>Please ensure:</p>
             <ul>
@@ -363,84 +458,32 @@ switch($step) {
         </div>
         <?php endif; ?>
 
-        <!-- Step 1: Dependencies -->
-        <div class="step <?php echo $step === 'check_dependencies' ? 'active' : ''; ?>">
-            <h3>Step 1: Dependencies Installation</h3>
-            <?php if (!areDependenciesInstalled()): ?>
-                <div class="subtitle">
-                    Dependencies need to be installed. Please follow these steps:
-                </div>
-                <ol class="mb-4">
-                    <li>First, install Composer if you haven't already:
-                        <div class="terminal">
-                            Composer-Setup.exe (Windows Installer)
-                            <button class="copy-btn" onclick="window.open('https://getcomposer.org/Composer-Setup.exe', '_blank')">Download</button>
-                        </div>
-                        <div class="subtitle" style="text-align: left; font-size: 0.875rem; margin-top: 0.5rem; background: var(--gray-50); padding: 1rem; border-radius: 12px;">
-                            🔒 Security Note:
-                            <ul style="margin-top: 0.5rem; color: var(--gray-600); list-style-type: none; padding-left: 0;">
-                                <li>✓ This is the official Composer installer from getcomposer.org</li>
-                                <li>✓ Composer is a standard PHP package manager used by millions of developers</li>
-                                <li>✓ You can verify the download at <a href="https://getcomposer.org" target="_blank" style="color: var(--primary-red);">getcomposer.org</a></li>
-                                <li>✓ The installer is digitally signed by Composer's development team</li>
-                            </ul>
-                        </div>
-                        <div class="subtitle" style="text-align: left; font-size: 0.875rem; margin-top: 0.5rem;">
-                            ⚠️ Important installation steps:
-                            <ol style="margin-top: 0.5rem; color: var(--gray-600);">
-                                <li>Run the downloaded Composer-Setup.exe</li>
-                                <li>Make sure to select "Add to PATH" when asked</li>
-                                <li>Use PHP from XAMPP when prompted (usually C:\xampp\php\php.exe)</li>
-                                <li>Click Next through the installation</li>
-                            </ol>
-                        </div>
-                    </li>
-                    <li>After installation, open a new command prompt/terminal</li>
-                    <li>
-                        Navigate to the project directory:
-                        <div class="terminal">
-                            cd <?php echo htmlspecialchars(realpath(__DIR__ . '/../../../../..')); ?>
-                            <button class="copy-btn" onclick="copyToClipboard(this)" data-text="cd <?php echo realpath(__DIR__ . '/../../../../..'); ?>">Copy</button>
-                        </div>
-                    </li>
-                    <li>
-                        Run this command:
-                        <div class="terminal">
-                            composer install
-                            <button class="copy-btn" onclick="copyToClipboard(this)" data-text="composer install">Copy</button>
-                        </div>
-                        <div class="subtitle" style="text-align: left; font-size: 0.875rem; margin-top: 0.5rem;">
-                            💡 If you get any errors, try running:
-                            <div class="terminal" style="margin-top: 0.5rem;">
-                                composer install --ignore-platform-reqs
-                                <button class="copy-btn" onclick="copyToClipboard(this)" data-text="composer install --ignore-platform-reqs">Copy</button>
-                            </div>
-                        </div>
-                    </li>
-                </ol>
-                <button class="setup-btn" onclick="checkDependencies()">I've Installed Dependencies</button>
-            <?php else: ?>
-                <div class="subtitle">
-                    ✓ Dependencies are installed correctly!
-                </div>
-                <a href="?step=run_migration" class="setup-btn">Continue to Database Setup</a>
-            <?php endif; ?>
+        <!-- Step 1: System Check -->
+        <div class="step <?php echo $setupManager->getStep() === 'check_system' ? 'active' : ''; ?>">
+            <h3>Step 1: System Check</h3>
+            <div class="subtitle">
+                Checking system requirements...
+            </div>
+            <a href="?step=run_migration" class="setup-btn">Continue</a>
         </div>
 
         <!-- Step 2: Database Setup -->
-        <div class="step <?php echo $step === 'run_migration' ? 'active' : ''; ?>">
+        <div class="step <?php echo $setupManager->getStep() === 'run_migration' ? 'active' : ''; ?>">
             <h3>Step 2: Database Setup</h3>
             <div class="subtitle">
                 We'll now set up your database and create an admin account.
                 Please ensure XAMPP (Apache and MySQL) is running before proceeding.
             </div>
             <div class="text-center">
-                <a href="?step=run_migration&confirm=1" class="setup-btn">Set Up Database</a>
+                <form method="post" action="?step=run_migration">
+                    <input type="hidden" name="csrf_token" value="<?php echo $setupManager->getCsrfToken(); ?>">
+                    <button type="submit" name="confirm" class="setup-btn">Set Up Database</button>
+                </form>
             </div>
         </div>
 
         <!-- Step 3: Complete -->
-        <div class="step <?php echo $step === 'complete' ? 'active' : ''; ?>">
+        <div class="step <?php echo $setupManager->getStep() === 'complete' ? 'active' : ''; ?>">
             <h3>Setup Complete! 🎉</h3>
             <div class="subtitle">
                 Your JobListing system has been set up successfully!
@@ -483,10 +526,6 @@ switch($step) {
                 btn.textContent = originalText;
             }, 2000);
         }
-
-        function checkDependencies() {
-            location.reload();
-        }
     </script>
 </body>
-</html> 
+</html>

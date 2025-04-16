@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="../Assets/Styles/style.css">
+    <style>
+        body {
+            overflow: auto !important;
+            height: auto !important;
+            min-height: 100vh;
+        }
+        
+        .form-section {
+            margin: 2rem auto;
+            max-width: 1000px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .status-badge.pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .status-badge.applied {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+    </style>
+
+    <script>
+        // Check authentication and role before page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('../Backend/Core/MAIN.php?action=checkAuth');
+                const data = await response.json();
+                
+                if (!data.isAuthenticated || data.usertype === 'admin') {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div class="blob"></div>
+    <div class="form-section">
+        <h1>Student Job Board</h1>
+        <p class="subtitle">Welcome! Find and apply for job opportunities that match your skills.</p>
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin: 2rem 0;">
+                <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; width: 220px; box-shadow: var(--shadow-md);">
+                    <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">🔍</div>
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">Browse Jobs</h3>
+                    <p style="font-size: 0.9rem; color: var(--gray-600);">Explore available positions and filter by your interests.</p>
+                    <span class="status-badge">Coming Soon</span>
+                </div>
+                
+                <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; width: 220px; box-shadow: var(--shadow-md);">
+                    <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">📝</div>
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">My Applications</h3>
+                    <p style="font-size: 0.9rem; color: var(--gray-600);">Track your job applications and their status.</p>
+                    <span class="status-badge pending">0 Pending</span>
+                </div>
+                
+                <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; width: 220px; box-shadow: var(--shadow-md);">
+                    <div style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary-red);">👤</div>
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--gray-700);">Profile</h3>
+                    <p style="font-size: 0.9rem; color: var(--gray-600);">Update your resume and personal information.</p>
+                    <span class="status-badge">Setup Required</span>
+                </div>
+            </div>
+
+            <div style="background: var(--white); border-radius: 10px; padding: 1.5rem; margin: 2rem auto; max-width: 600px; box-shadow: var(--shadow-md);">
+                <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-700);">Recent Job Postings</h3>
+                <p style="color: var(--gray-600); font-style: italic;">No jobs available at the moment. Check back soon!</p>
+            </div>
+            
+            <a href="login.html" class="submit-btn" style="display: inline-block; text-decoration: none; margin-top: 1rem;">
+                Sign Out
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

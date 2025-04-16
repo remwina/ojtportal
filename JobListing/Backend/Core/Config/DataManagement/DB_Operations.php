@@ -1,217 +1,193 @@
-<?php 
+<?php
 
-require_once __DIR__ . '/Database.php';
-require_once __DIR__ . '/../Migrations/create_users_table.php';
-require_once __DIR__ . '/Models/User.php';
+require_once 'DB_Connect.php';
 
-use Illuminate\Database\Capsule\Manager as Capsule;
-use App\Core\Config\Models\User;
+class SQL_Operations {
+    private $conn;
 
-class DB_Operations {
-    private static function initializeConnection() {
-        try {
-            $capsule = new Capsule;
-            $capsule->addConnection([
-                'driver'    => 'mysql',
-                'host'      => 'localhost',
-                'database'  => 'joblisting',
-                'username'  => 'root',
-                'password'  => 'root',  // Changed to match XAMPP default
-                'charset'   => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix'    => '',
-                'port'      => 3306,
-                'options'   => [
-                    \PDO::ATTR_PERSISTENT => true,
-                    \PDO::ATTR_EMULATE_PREPARES => true,
-                    \PDO::ATTR_STRINGIFY_FETCHES => false,
-                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
-                ]
-            ]);
-            $capsule->setAsGlobal();
-            $capsule->bootEloquent();
-            return true;
-        } catch (\Exception $e) {
-            error_log("Database connection error: " . $e->getMessage());
-            throw new \Exception("Database connection error: " . $e->getMessage());
+    public function __construct($config = null) {
+        if ($config instanceof DBConn) {
+            $this->conn = $config;
+        } else {
+            $this->conn = new DBConn();  // Will use DatabaseConfig singleton by default
         }
     }
 
-    private static function createUserTable() {
-        try {
-            Capsule::schema()->create('users', function ($table) {
-                $table->id();
-                $table->string('srcode', 9)->unique();
-                $table->string('email')->unique();
-                $table->string('password');
-                $table->enum('usertype', ['admin', 'user']);
-                $table->enum('status', ['active', 'inactive'])->default('active');
-                $table->timestamps();
-                $table->softDeletes();
-            });
-            return true;
-        } catch (\Exception $e) {
-            throw new \Exception("Error creating users table: " . $e->getMessage());
+    public function getConnection() {
+        if (!$this->conn) {
+            throw new Exception("Database connection not initialized");
         }
+        return $this->conn->getConnection();
     }
 
-    public static function initDatabase() {
+    public function authenticate($email) {
         try {
-            // First check if MySQL is running
-            $socket = @fsockopen('127.0.0.1', 3306, $errno, $errstr, 5);
-            if (!$socket) {
-                throw new \Exception("MySQL server is not running. Please start MySQL in XAMPP.");
+            $conn = $this->getConnection();
+            $sql = "SELECT 
+                    u.id,
+                    u.srcode,
+                    u.email,
+                    u.password,
+                    u.usertype,
+                    u.status
+                    FROM users u
+                    WHERE u.email = ? AND u.status = 'active'
+                    LIMIT 1";
+
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception("Failed to prepare authentication query");
             }
-            fclose($socket);
 
-            $pdo = new \PDO(
-                "mysql:host=127.0.0.1;port=3306",
-                'root',
-                'root',  // Updated password
-                [
-                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-                    \PDO::ATTR_PERSISTENT => false
-                ]
+            $stmt->bind_param('s', $email);
+            if (!$stmt->execute()) {
+                throw new Exception("Authentication query failed");
+            }
+
+            $result = $stmt->get_result();
+            return $result->fetch_assoc();
+        } catch (Exception $e) {
+            error_log("Authentication error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function checkEmailExists($email) {
+        try {
+            return $this->checkExists('users', ['email' => $email]);
+        } catch (Exception $e) {
+            error_log("Email check error: " . $e->getMessage());
+            throw new Exception("Email verification failed");
+        }
+    }
+
+    public function checkSRCodeExists($srcode) {
+        try {
+            return $this->checkExists('users', ['srcode' => $srcode]);
+        } catch (Exception $e) {
+            error_log("SR Code check error: " . $e->getMessage());
+            throw new Exception("SR Code verification failed");
+        }
+    }
+
+    public function createUser($userData) {
+        $conn = $this->getConnection();
+        $conn->begin_transaction();
+
+        try {
+            // Validate required fields
+            $requiredFields = ['srcode', 'email', 'password', 'usertype', 'status'];
+            foreach ($requiredFields as $field) {
+                if (!isset($userData[$field]) || trim($userData[$field]) === '') {
+                    throw new Exception("Missing required field: $field");
+                }
+            }
+
+            $stmt = $conn->prepare("INSERT INTO users (srcode, email, password, usertype, status) VALUES (?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                throw new Exception("Failed to prepare user creation query");
+            }
+
+            $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
+            $stmt->bind_param('sssss', 
+                $userData['srcode'],
+                $userData['email'],
+                $hashedPassword,
+                $userData['usertype'],
+                $userData['status']
             );
-            
-            // Try to select the database first
-            try {
-                $pdo->query("USE joblisting");
-                error_log("Database 'joblisting' already exists");
-            } catch (\Exception $e) {
-                // Database doesn't exist, create it
-                error_log("Creating database 'joblisting'");
-                $pdo->exec("CREATE DATABASE IF NOT EXISTS joblisting CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+            if (!$stmt->execute()) {
+                throw new Exception("Failed to create user: " . $stmt->error);
             }
 
-            // Initialize the Eloquent connection after database is created
-            if (!self::initializeConnection()) {
-                throw new \Exception("Failed to initialize database connection");
-            }
-            
+            $userId = $conn->insert_id;
+            $stmt->close();
+
+            $conn->commit();
             return [
-                "success" => true,
-                "message" => "Database initialized successfully"
+                'success' => true,
+                'user_id' => $userId,
+                'message' => 'User created successfully'
             ];
-        } catch (\Exception $e) {
-            error_log("Database initialization error: " . $e->getMessage());
-            throw new \Exception("Database initialization error: " . $e->getMessage());
+        } catch (Exception $e) {
+            $conn->rollback();
+            error_log("User creation error: " . $e->getMessage());
+            throw new Exception("Registration failed: " . $e->getMessage());
         }
     }
 
-    public static function setup($reset = false) {
-        try {
-            // Create database if it doesn't exist
-            $pdo = new \PDO("mysql:host=localhost", "root", "root");
-            $pdo->exec("CREATE DATABASE IF NOT EXISTS joblisting");
-            
-            // Initialize connection
-            $capsule = new Capsule;
-            $capsule->addConnection([
-                'driver'    => 'mysql',
-                'host'      => 'localhost',
-                'database'  => 'joblisting',
-                'username'  => 'root',
-                'password'  => 'root',
-                'charset'   => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
-                'prefix'    => '',
-            ]);
-            $capsule->setAsGlobal();
-            $capsule->bootEloquent();
+    private function checkExists($table, $conditions) {
+        $conn = $this->getConnection();
+        $where = [];
+        $params = [];
+        $types = '';
+        
+        foreach ($conditions as $field => $value) {
+            $where[] = "$field = ?";
+            $params[] = $value;
+            $types .= is_int($value) ? 'i' : 's';
+        }
+        
+        $sql = "SELECT 1 FROM $table WHERE " . implode(' AND ', $where) . " LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception("Failed to prepare existence check query");
+        }
 
-            // Drop tables if reset is true
-            if ($reset) {
-                Capsule::schema()->dropIfExists('users');
+        $stmt->bind_param($types, ...$params);
+        if (!$stmt->execute()) {
+            throw new Exception("Failed to execute existence check");
+        }
+
+        $stmt->store_result();
+        return $stmt->num_rows > 0;
+    }
+
+    public function initDatabase() {
+        $conn = $this->getConnection();
+        try {
+            // Create users table if it doesn't exist
+            $sql = "CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                srcode VARCHAR(9) UNIQUE NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                usertype ENUM('admin', 'user', 'none') NOT NULL DEFAULT 'none',
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP NULL,
+                INDEX idx_email_status (email, status),
+                INDEX idx_srcode_status (srcode, status)
+            )";
+
+            if (!$conn->query($sql)) {
+                throw new Exception("Failed to create users table: " . $conn->error);
             }
 
-            // Create tables if they don't exist
-            if (!Capsule::schema()->hasTable('users')) {
-                Capsule::schema()->create('users', function ($table) {
-                    $table->id();
-                    $table->string('srcode', 9)->unique();
-                    $table->string('email')->unique();
-                    $table->string('password');
-                    $table->enum('usertype', ['admin', 'user']);
-                    $table->enum('status', ['active', 'inactive'])->default('active');
-                    $table->timestamps();
-                    $table->softDeletes();
-                });
-
-                // Create default admin user
-                self::createDefaultAdmin();
-            }
-
-            return [
-                "success" => true,
-                "message" => $reset ? "Database reset successfully" : "Database created successfully"
-            ];
-        } catch (\Exception $e) {
-            return [
-                "success" => false,
-                "message" => "Database error: " . $e->getMessage()
-            ];
-        }
-    }
-
-    // User-related operations
-    public static function checkEmailExists($email) {
-        return User::where('email', $email)->exists();
-    }
-
-    public static function checkSRCodeExists($srcode) {
-        return User::where('srcode', $srcode)->exists();
-    }
-
-    public static function createUser($data) {
-        try {
-            $user = User::create([
-                'usertype' => $data['usertype'],
-                'srcode' => $data['srcode'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-                'status' => 'active'
-            ]);
-
-            return [
-                "success" => true,
-                "message" => "Registration Success! Welcome " . ucfirst($data['usertype']) . "!",
-                "redirect" => "../Frontend/login.html"
-            ];
-        } catch (\Exception $e) {
-            return [
-                "success" => false,
-                "errors" => [["field" => "general", "message" => "Database error occurred: " . $e->getMessage()]]
-            ];
-        }
-    }
-
-    public static function findUserBySRCode($srcode) {
-        return User::where('srcode', $srcode)
-                  ->where('status', 'active')
-                  ->whereNull('deleted_at')
-                  ->first();
-    }
-
-    private static function createDefaultAdmin() {
-        try {
-            // Check if admin already exists
-            if (!self::checkEmailExists('admin@admin.com')) {
-                $adminData = [
-                    'usertype' => 'admin',
-                    'srcode' => 'ADMIN0001',
+            // Check if admin exists, if not create default admin
+            if (!$this->checkEmailExists('admin@admin.com')) {
+                $this->createUser([
+                    'srcode' => '21-00001',
                     'email' => 'admin@admin.com',
-                    'password' => password_hash('admin123', PASSWORD_DEFAULT),
+                    'password' => 'admin123',
+                    'usertype' => 'admin',
                     'status' => 'active'
-                ];
-                
-                User::create($adminData);
-                error_log("Default admin user created successfully");
+                ]);
             }
-        } catch (\Exception $e) {
-            error_log("Error creating default admin: " . $e->getMessage());
+            
+            return ["success" => true, "message" => "Database initialized successfully"];
+        } catch (Exception $e) {
+            error_log("Database initialization error: " . $e->getMessage());
+            throw new Exception("Database initialization failed: " . $e->getMessage());
+        }
+    }
+
+    public function close() {
+        if ($this->conn) {
+            $this->conn->close();
         }
     }
 }
-
 ?>

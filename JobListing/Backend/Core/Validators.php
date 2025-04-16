@@ -4,95 +4,81 @@ class Validators {
     private $errors;
     private $collectedErrors;
 
-    private function addToCollectedErrors()
-    {
+    public function __construct() {
+        $this->clearAllErrors();
+    }
+
+    private function addToCollectedErrors() {
         if (!empty($this->errors)) {
-            $this->collectedErrors = array_merge($this->collectedErrors, $this->errors);
+            $this->collectedErrors = array_merge($this->collectedErrors ?? [], $this->errors);
         }
     }
 
-    public function getErrors()
-    {
-        return empty($this->collectedErrors)
-            ? ["success" => true]
+    public function getErrors() {
+        return empty($this->collectedErrors) 
+            ? ["success" => true] 
             : ["success" => false, "errors" => $this->collectedErrors];
     }
 
-    public function clearAllErrors()
-    {
+    public function clearAllErrors() {
         $this->errors = [];
         $this->collectedErrors = [];
     }
 
     public function isValidUsertype($usertype) {
         $this->errors = [];
+        $validTypes = ['admin', 'user', 'none'];
 
-        if (empty($usertype)) {
-            $this->errors[] = ["field" => "usertype", "message" => "User type is required"];
-        } elseif (!in_array($usertype, ['admin', 'user'])) {
-            $this->errors[] = ["field" => "usertype", "message" => "Invalid user type"];
+        if (empty($usertype) || $usertype === 'none') {
+            $this->errors[] = ["field" => "usertype", "message" => "Please select a user type"];
+        } elseif (!in_array(strtolower($usertype), $validTypes)) {
+            $this->errors[] = ["field" => "usertype", "message" => "Invalid user type selected"];
         }
-
         $this->addToCollectedErrors();
-        return $this->errors;
+        return empty($this->errors);
     }
 
-    public function isValidSRCode($srcode){
+    public function isValidEmail($email) {
         $this->errors = [];
-
-        if (empty($srcode)) {
-            $this->errors[] = ["field" => "srcode", "message" => "SR-Code is required"];
-        } elseif (!preg_match(SRCODE_FORMAT, $srcode)) {
-            $this->errors[] = ["field" => "srcode", "message" => "Invalid SR-Code format"];
-        }
-
-        $this->addToCollectedErrors();
-        return $this->errors;
-    }
-
-    public function isValidEmail($email){
-        $this->errors = [];
-
         if (empty($email)) {
             $this->errors[] = ["field" => "email", "message" => "Email is required"];
-        } elseif (!preg_match(EMAIL_FORMAT, $email)) {
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->errors[] = ["field" => "email", "message" => "Invalid email format"];
         }
-
         $this->addToCollectedErrors();
-        return $this->errors;
+        return empty($this->errors);
     }
 
-    public function isValidPassword($password){
+    public function isValidSRCode($srcode) {
         $this->errors = [];
+        $pattern = '/^\d{2}-\d{5}$/'; // Format: XX-XXXXX (e.g., 21-00001)
 
+        if (empty($srcode)) {
+            $this->errors[] = ["field" => "srcode", "message" => "SR Code is required"];
+        } elseif (!preg_match($pattern, $srcode)) {
+            $this->errors[] = ["field" => "srcode", "message" => "Invalid SR Code format. Use XX-XXXXX format"];
+        }
+        $this->addToCollectedErrors();
+        return empty($this->errors);
+    }
+
+    public function isValidPassword($password, $confirmPassword = null) {
+        $this->errors = [];
         if (empty($password)) {
             $this->errors[] = ["field" => "password", "message" => "Password is required"];
-        } elseif (strlen($password) < 8) {
-            $this->errors[] = ["field" => "password", "message" => "Password must be at least 8 characters long"];
-        } elseif (!preg_match('/[A-Z]/', $password)) {
-            $this->errors[] = ["field" => "password", "message" => "Password must contain at least one uppercase letter"];
-        } elseif (!preg_match('/[a-z]/', $password)) {
-            $this->errors[] = ["field" => "password", "message" => "Password must contain at least one lowercase letter"];
-        } elseif (!preg_match('/\d/', $password)) {
-            $this->errors[] = ["field" => "password", "message" => "Password must contain at least one digit"];
-        } elseif (!preg_match('/[\W_]/', $password)) {
-            $this->errors[] = ["field" => "password", "message" => "Password must contain at least one special character"];
+        } elseif (strlen($password) < 6) {
+            $this->errors[] = ["field" => "password", "message" => "Password must be at least 6 characters"];
         }
 
-        $this->addToCollectedErrors();
-        return $this->errors;
-    }
-
-    public function isValidConfirmPassword($confirmPassword){
-        $this->errors = [];
-
-        if (empty($confirmPassword)) {
-            $this->errors[] = ["field" => "conpass", "message" => "Confirm Password is required"];
+        if ($confirmPassword !== null) {
+            if (empty($confirmPassword)) {
+                $this->errors[] = ["field" => "confirm_password", "message" => "Please confirm your password"];
+            } elseif ($password !== $confirmPassword) {
+                $this->errors[] = ["field" => "confirm_password", "message" => "Passwords do not match"];
+            }
         }
-
         $this->addToCollectedErrors();
-        return $this->errors;
+        return empty($this->errors);
     }
 }
 
