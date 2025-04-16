@@ -4,15 +4,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Registration</title>
+    <title>Job Placement and Listing Management - BatStateU</title>
     <link rel="stylesheet" href="../Assets/Styles/style.css">
     <!-- Add SweetAlert -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .school-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .school-header img {
+            width: 60px;
+            height: auto;
+        }
+        .school-info {
+            flex: 1;
+        }
+        .school-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .campus-name {
+            font-size: 0.9em;
+            color: #666;
+            margin: 0;
+        }
+        .system-name {
+            font-size: 0.8em;
+            color: var(--primary-red);
+            margin-top: 2px;
+        }
+    </style>
 </head>
 
 <body>
     <div class="blob"></div>
     <div class="form-section">
+        <div class="school-header">
+            <img src="../Assets/Images/BatStateU-NEU-Logo.png" alt="BatStateU Logo">
+            <div class="school-info">
+                <div class="school-name">Batangas State University</div>
+                <div class="campus-name">The NEU - Lipa Campus</div>
+                <div class="system-name">Job Placement and Listing Management</div>
+            </div>
+        </div>
         <h1>Register</h1>
         <p class="subtitle">Join our student job listing platform to explore exciting opportunities!</p>
         <form id="registerForm" class="auth-form">
@@ -35,7 +76,6 @@
                        name="srcode" 
                        placeholder="Enter SR Code (XX-XXXXX)" 
                        maxlength="8">
-                <small class="input-help">Format: XX-XXXXX (e.g., 21-00001)</small>
                 <div id="srcode-error" class="error-message"></div>
             </div>
             <div class="form-group">
