@@ -5,44 +5,32 @@ require_once __DIR__ . '/Security/TokenHandler.php';
 require_once __DIR__ . '/../Shell/Login.php';
 require_once __DIR__ . '/../Shell/Register.php';
 
-// Initialize session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 header('Content-Type: application/json');
 
-try {
-    error_log("Request received: " . print_r($_REQUEST, true));
-    
-    // Get the action from POST or GET
+try {    
     $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : ($_GET['action'] ?? null);
     $data = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
     
-    // Skip CSRF verification for login and csrf_init actions
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, ['login', 'csrf_init'])) {
         if (!isset($_POST['csrf_token'])) {
-            error_log("CSRF token missing");
             throw new Exception("CSRF token missing");
         }
         if (!TokenHandler::verifyToken($_POST['csrf_token'])) {
-            error_log("Invalid CSRF token");
             throw new Exception("Invalid security token");
         }
     }
 
     if (!$action) {
-        error_log("No action specified in request");
         throw new Exception("No action specified");
     }
-
-    error_log("Processing action: " . $action);
     
-    // Route to appropriate handler
     $response = null;
     
     switch($action) {
@@ -83,10 +71,8 @@ try {
                 $data['email'] ?? '',
                 $data['password'] ?? ''
             );
-            error_log("Login response: " . print_r($response, true));
             
             if ($response['success']) {
-                // Generate new CSRF token after login
                 $response['csrf_token'] = TokenHandler::generateToken();
             }
             break;
@@ -98,12 +84,10 @@ try {
                 $data['srcode'] ?? '',
                 $data['email'] ?? '',
                 $data['password'] ?? '',
-                $data['confirm_password'] ?? ''  // Changed from null to empty string default
+                $data['confirm_password'] ?? ''
             );
-            error_log("Register response: " . print_r($response, true));
             
             if ($response['success']) {
-                // Generate CSRF token for the new user
                 $response['csrf_token'] = TokenHandler::generateToken();
             }
             break;
@@ -130,14 +114,12 @@ try {
             break;
             
         default:
-            error_log("Invalid action received: " . $action);
             throw new Exception("Invalid action: " . $action);
     }
     
     echo json_encode($response);
     
 } catch (Exception $e) {
-    error_log("Error in MAIN.php: " . $e->getMessage() . "\n" . $e->getTraceAsString());
     http_response_code(400);
     echo json_encode([
         "success" => false,

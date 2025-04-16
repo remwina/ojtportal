@@ -1,4 +1,3 @@
-// CSRF Token Management
 const CSRFManager = {
     async init() {
         try {
@@ -13,7 +12,6 @@ const CSRFManager = {
                 this.setToken(data.csrf_token);
             }
         } catch (error) {
-            console.error('Failed to initialize CSRF token:', error);
         }
     },
 
@@ -41,9 +39,8 @@ const CSRFManager = {
         }
     },
 
-    // Add CSRF token to fetch requests
     async fetchWithToken(url, options = {}) {
-        await this.init(); // Ensure we have a token
+        await this.init();
         const token = this.getToken();
         
         if (token) {
@@ -64,7 +61,6 @@ const CSRFManager = {
         const response = await fetch(url, options);
         const data = await response.json();
         
-        // Update token if provided in response
         if (data.csrf_token) {
             this.setToken(data.csrf_token);
         }

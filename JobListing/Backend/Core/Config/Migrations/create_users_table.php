@@ -14,7 +14,6 @@ class CreateUsersTable {
         $conn = $this->dbOps->getConnection();
         
         try {
-            // Create users table if it doesn't exist
             $sql = "CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 srcode VARCHAR(9) UNIQUE NOT NULL,
@@ -54,3 +53,4 @@ class CreateUsersTable {
         }
     }
 }
+?>

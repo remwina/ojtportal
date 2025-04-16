@@ -20,7 +20,6 @@ class Login {
 
         $this->validator->clearAllErrors();
 
-        // Validate both email and password
         $this->validator->isValidEmail($email);
         $this->validator->isValidPassword($password);
         
@@ -48,8 +47,7 @@ class Login {
         $_SESSION['usertype'] = $user['usertype'];
         $_SESSION['srcode'] = $user['srcode'];
 
-        // Determine redirect based on user type
-        $redirect = $user['usertype'] === 'admin' ? "../Frontend/placeholder.html" : "../Frontend/user-dashboard.html";
+        $redirect = $user['usertype'] === 'admin' ? "../Frontend/Placeholder1-Admin.html" : "../Frontend/Placeholder3-User.html";
 
         return [
             "success" => true,

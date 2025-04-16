@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// Start session at the very beginning
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -24,19 +23,16 @@ class SetupManager {
         $this->step = $_GET['step'] ?? 'check_system';
         
         try {
-            // Only validate POST requests
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $this->validateRequest();
             }
             
-            // Initialize database operations
             $this->dbOps = new SQL_Operations();
         } catch (Exception $e) {
             $this->error = $e->getMessage();
             $this->step = 'error';
         }
 
-        // Generate new token if one doesn't exist
         if (!isset($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -47,26 +43,22 @@ class SetupManager {
             !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
             throw new RuntimeException('Invalid CSRF token');
         }
-        // Generate new token after successful validation
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
 
     private function checkSystemRequirements(): array {
         $issues = [];
         
-        // Check PHP version
         if (version_compare(PHP_VERSION, self::REQUIRED_PHP_VERSION, '<')) {
             $issues[] = "PHP version " . self::REQUIRED_PHP_VERSION . " or higher is required. Current version: " . PHP_VERSION;
         }
 
-        // Check extensions
         foreach (self::REQUIRED_EXTENSIONS as $ext) {
             if (!extension_loaded($ext)) {
                 $issues[] = "Required PHP extension missing: {$ext}";
             }
         }
 
-        // Check MySQL connection
         try {
             if ($this->dbOps) {
                 $this->dbOps->getConnection();
@@ -130,8 +122,7 @@ class SetupManager {
 
 $setupManager = new SetupManager();
 $setupManager->handleSetup();
-?>
-<!DOCTYPE html>
+?><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -407,7 +398,7 @@ $setupManager->handleSetup();
             background: var(--dark-red);
         }
         .card {
-            background: var(--white);
+            background: var (--white);
             border-radius: 12px;
             border: 1px solid var(--gray-200);
             margin-bottom: 1.5rem;
@@ -458,7 +449,6 @@ $setupManager->handleSetup();
         </div>
         <?php endif; ?>
 
-        <!-- Step 1: System Check -->
         <div class="step <?php echo $setupManager->getStep() === 'check_system' ? 'active' : ''; ?>">
             <h3>Step 1: System Check</h3>
             <div class="subtitle">
@@ -467,7 +457,6 @@ $setupManager->handleSetup();
             <a href="?step=run_migration" class="setup-btn">Continue</a>
         </div>
 
-        <!-- Step 2: Database Setup -->
         <div class="step <?php echo $setupManager->getStep() === 'run_migration' ? 'active' : ''; ?>">
             <h3>Step 2: Database Setup</h3>
             <div class="subtitle">
@@ -482,7 +471,6 @@ $setupManager->handleSetup();
             </div>
         </div>
 
-        <!-- Step 3: Complete -->
         <div class="step <?php echo $setupManager->getStep() === 'complete' ? 'active' : ''; ?>">
             <h3>Setup Complete! 🎉</h3>
             <div class="subtitle">

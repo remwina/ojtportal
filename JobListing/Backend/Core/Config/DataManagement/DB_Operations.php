@@ -1,5 +1,4 @@
 <?php
-
 require_once 'DB_Connect.php';
 
 class SQL_Operations {
@@ -9,7 +8,7 @@ class SQL_Operations {
         if ($config instanceof DBConn) {
             $this->conn = $config;
         } else {
-            $this->conn = new DBConn();  // Will use DatabaseConfig singleton by default
+            $this->conn = new DBConn();
         }
     }
 
@@ -47,7 +46,6 @@ class SQL_Operations {
             $result = $stmt->get_result();
             return $result->fetch_assoc();
         } catch (Exception $e) {
-            error_log("Authentication error: " . $e->getMessage());
             throw $e;
         }
     }
@@ -56,7 +54,6 @@ class SQL_Operations {
         try {
             return $this->checkExists('users', ['email' => $email]);
         } catch (Exception $e) {
-            error_log("Email check error: " . $e->getMessage());
             throw new Exception("Email verification failed");
         }
     }
@@ -65,7 +62,6 @@ class SQL_Operations {
         try {
             return $this->checkExists('users', ['srcode' => $srcode]);
         } catch (Exception $e) {
-            error_log("SR Code check error: " . $e->getMessage());
             throw new Exception("SR Code verification failed");
         }
     }
@@ -75,7 +71,6 @@ class SQL_Operations {
         $conn->begin_transaction();
 
         try {
-            // Validate required fields
             $requiredFields = ['srcode', 'email', 'password', 'usertype', 'status'];
             foreach ($requiredFields as $field) {
                 if (!isset($userData[$field]) || trim($userData[$field]) === '') {
@@ -112,7 +107,6 @@ class SQL_Operations {
             ];
         } catch (Exception $e) {
             $conn->rollback();
-            error_log("User creation error: " . $e->getMessage());
             throw new Exception("Registration failed: " . $e->getMessage());
         }
     }
@@ -147,7 +141,6 @@ class SQL_Operations {
     public function initDatabase() {
         $conn = $this->getConnection();
         try {
-            // Create users table if it doesn't exist
             $sql = "CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 srcode VARCHAR(9) UNIQUE NOT NULL,
@@ -166,7 +159,6 @@ class SQL_Operations {
                 throw new Exception("Failed to create users table: " . $conn->error);
             }
 
-            // Check if admin exists, if not create default admin
             if (!$this->checkEmailExists('admin@admin.com')) {
                 $this->createUser([
                     'srcode' => '21-00001',
@@ -179,7 +171,6 @@ class SQL_Operations {
             
             return ["success" => true, "message" => "Database initialized successfully"];
         } catch (Exception $e) {
-            error_log("Database initialization error: " . $e->getMessage());
             throw new Exception("Database initialization failed: " . $e->getMessage());
         }
     }

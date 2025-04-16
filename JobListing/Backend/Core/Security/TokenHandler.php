@@ -1,5 +1,4 @@
 <?php
-
 class TokenHandler {
     public static function generateToken() {
         if (session_status() === PHP_SESSION_NONE) {

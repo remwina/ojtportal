@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     const btnLoader = submitButton?.querySelector('.btn-loader');
     const MIN_PROCESSING_TIME = 800;
 
-    // Constants for alert messages
     const MESSAGES = {
         ERROR: {
             VALIDATION: "Please check your input and try again.",
@@ -42,7 +41,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 inputField.classList.add("error");
                 inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
-                // If this is a password mismatch error, highlight both password fields
                 if (fieldname.toLowerCase() === 'confirm_password' && message.includes("match")) {
                     const passwordField = document.querySelector('[name="password"]');
                     if (passwordField) {
@@ -65,7 +63,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             e.preventDefault();
             clearErrors();
 
-            // Show loading state
             if (submitButton) {
                 submitButton.disabled = true;
                 if (btnText) btnText.style.display = 'none';
@@ -76,7 +73,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             const startTime = Date.now();
 
             try {
-                // Use CSRFManager to handle the request
                 const data = await CSRFManager.fetchWithToken("../Backend/Core/MAIN.php", {
                     method: "POST",
                     body: formData
@@ -101,10 +97,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                         confirmButtonText: "Continue"
                     });
 
-                    // Redirect to placeholder.html on successful registration
                     const action = formData.get('action');
                     if (action === 'register') {
-                        window.location.href = 'placeholder.html';
+                        window.location.href = 'login.html';
                     } else if (data.redirect) {
                         window.location.href = data.redirect;
                     }
@@ -123,7 +118,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     }
                 }
             } catch (error) {
-                console.error("Error:", error);
                 await Swal.fire({
                     title: "Error!",
                     text: error.message || MESSAGES.ERROR.NETWORK,
@@ -140,7 +134,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // Initialize tooltips if present
     const tooltips = document.querySelectorAll('[data-tooltip]');
     tooltips.forEach(element => {
         element.addEventListener('mouseenter', function(e) {

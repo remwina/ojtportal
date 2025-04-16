@@ -1,4 +1,3 @@
-// Check admin authentication first
 async function checkAdminAuth() {
     try {
         const response = await fetch('../Backend/Core/MAIN.php?action=checkAdmin');
@@ -31,12 +30,10 @@ async function checkAdminAuth() {
     }
 }
 
-// Run auth check when page loads
 document.addEventListener('DOMContentLoaded', async function() {
     const isAdmin = await checkAdminAuth();
     if (!isAdmin) return;
     
-    // Rest of the loading.js functionality
     async function showMessage(element, message, isError = false) {
         element.textContent = message;
         element.style.display = 'block';
@@ -78,7 +75,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             statusMessage.style.display = 'none';
             consoleOutput.style.display = 'none';
 
-            // Add artificial delay for better UX
             await new Promise(resolve => setTimeout(resolve, 1500));
 
             const formData = new FormData();
@@ -105,14 +101,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
         } catch (error) {
-            console.error('Error:', error);
             await showMessage(statusMessage, 'An error occurred: ' + error.message, true);
         } finally {
             setLoading(button, false);
         }
     }
 
-    // Make functions available globally
     window.showMessage = showMessage;
     window.showConsoleOutput = showConsoleOutput;
     window.setLoading = setLoading;

@@ -5,10 +5,8 @@ try {
     $dbOps = new SQL_Operations();
     $conn = $dbOps->getConnection();
     
-    // Drop users table
     $conn->query("DROP TABLE IF EXISTS users");
     
-    // Reinitialize database with fresh tables and default admin
     $result = $dbOps->initDatabase();
     
     header('Content-Type: application/json');

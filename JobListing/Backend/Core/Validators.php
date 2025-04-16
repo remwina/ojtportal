@@ -1,5 +1,4 @@
 <?php 
-
 class Validators {
     private $errors;
     private $collectedErrors;
@@ -51,7 +50,7 @@ class Validators {
 
     public function isValidSRCode($srcode) {
         $this->errors = [];
-        $pattern = '/^\d{2}-\d{5}$/'; // Format: XX-XXXXX (e.g., 21-00001)
+        $pattern = '/^\d{2}-\d{5}$/';
 
         if (empty($srcode)) {
             $this->errors[] = ["field" => "srcode", "message" => "SR Code is required"];
@@ -81,5 +80,4 @@ class Validators {
         return empty($this->errors);
     }
 }
-
 ?>

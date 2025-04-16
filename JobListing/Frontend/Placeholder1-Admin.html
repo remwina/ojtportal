@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="../Assets/Styles/new-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <main class="hero-section">
+        <div class="left-section">
+            <div class="animated-bg"></div>
+            <div class="content-wrapper">
+                <div class="school-header">
+                    <img src="../Assets/Images/BatStateU-NEU-Logo.png" alt="BatStateU Logo">
+                    <div class="school-info">
+                        <div class="school-name">Batangas State University</div>
+                        <div class="campus-name">The NEU - Lipa Campus</div>
+                    </div>
+                </div>
+
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1>Admin Dashboard</h1>
+                        <p class="hero-subtitle">Manage job listings and user accounts</p>
+                    </div>
+                    <div class="floating-elements">
+                        <div class="floating-icon" style="--delay: 0">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 1">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 2">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 3">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 4">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="floating-icon white-icon" style="--delay: 5">
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-item" style="--delay: 0">
+                            <span class="stat-number">0</span>
+                            <span class="stat-label">Active Jobs</span>
+                            <a href="#" class="action-btn">
+                                <i class="fas fa-plus"></i> Post New Job
+                            </a>
+                        </div>
+                        <div class="stat-item" style="--delay: 1">
+                            <span class="stat-number">0</span>
+                            <span class="stat-label">Users</span>
+                            <a href="#" class="action-btn">
+                                <i class="fas fa-users"></i> View Users
+                            </a>
+                        </div>
+                        <div class="stat-item" style="--delay: 2">
+                            <span class="stat-number">0</span>
+                            <span class="stat-label">Applications</span>
+                            <a href="#" class="action-btn">
+                                <i class="fas fa-chart-line"></i> View Stats
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="floating-elements right-icons">
+                <div class="floating-icon red-icon" style="--delay: 0">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <div class="floating-icon red-icon" style="--delay: 1">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="floating-icon red-icon" style="--delay: 2">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+            </div>
+
+            <div class="auth-container">
+                <h2>Quick Actions</h2>
+                <p class="auth-subtitle">Access frequently used tools and features</p>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <a href="Placeholder2-Database.html" class="auth-btn primary" style="width: 100%;">
+                        <i class="fas fa-database"></i>
+                        Database Management
+                    </a>
+                    <a href="login.html" class="auth-btn secondary" onclick="localStorage.removeItem('csrf_token')" style="width: 100%;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check authentication and role before page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('../Backend/Core/MAIN.php?action=checkAdmin');
+                const data = await response.json();
+
+                if (!data.isAdmin) {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

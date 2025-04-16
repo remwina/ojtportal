@@ -10,7 +10,7 @@ class UserReg {
 
     public function __construct() {
         $this->validator = new Validators();
-        $this->db = new SQL_Operations();  // Will use DatabaseConfig singleton by default
+        $this->db = new SQL_Operations();
     }
 
     public function registerUser($usertype, $srcode, $email, $password, $conpass = null) {
@@ -20,7 +20,6 @@ class UserReg {
 
         $this->validator->clearAllErrors();
 
-        // Validate all inputs
         $this->validator->isValidUsertype($usertype);
         $this->validator->isValidEmail($email);
         $this->validator->isValidSRCode($srcode);
@@ -31,7 +30,6 @@ class UserReg {
             return $validationResult;
         }
 
-        // Check for existing email or SR Code
         if ($this->db->checkEmailExists($email)) {
             return [
                 "success" => false,

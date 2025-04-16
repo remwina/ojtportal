@@ -1,8 +1,4 @@
 <?php
-
-// IMPORTANT: This XAMPP installation has been modified!
-// The MySQL password has been changed from the default empty string
-// to 'root'. Do not change this password unless instructed.
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/../Migrations/create_users_table.php';
 require_once __DIR__ . '/Models/User.php';
@@ -11,18 +7,15 @@ require_once __DIR__ . '/DB_Operations.php';
 try {
     echo "Running migrations...\n";
     
-    // Get the command line argument if it exists
     $action = isset($argv[1]) ? strtolower($argv[1]) : 'up';
     
-    // Create database operations instance with correct config
     $dbOps = new SQL_Operations([
         'host' => 'localhost',
         'username' => 'root',
-        'password' => 'root',  // Modified XAMPP: Password is 'root', not empty string
+        'password' => 'root',
         'dbname' => 'joblisting'
     ]);
     
-    // Initialize migration with database connection
     $migration = new CreateUsersTable($dbOps);
     
     if ($action === 'down') {
@@ -32,7 +25,6 @@ try {
         $migration->up();
         echo "Migration completed!\n";
         
-        // Create default admin user
         try {
             $adminData = [
                 'usertype' => 'admin',

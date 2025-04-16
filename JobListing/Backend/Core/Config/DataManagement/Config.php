@@ -1,8 +1,4 @@
 <?php
-
-// IMPORTANT: This XAMPP installation has been modified!
-// The MySQL password has been changed from the default empty string
-// to 'root'. Do not change this password unless instructed.
 class DatabaseConfig {
     private static $instance = null;
     private $config;
@@ -11,7 +7,7 @@ class DatabaseConfig {
         $this->config = [
             'host' => 'localhost',
             'username' => 'root',
-            'password' => 'root',  // Modified XAMPP: Password is 'root', not empty string
+            'password' => 'root',
             'dbname' => 'joblisting'
         ];
     }
@@ -27,11 +23,10 @@ class DatabaseConfig {
         return $this->config;
     }
 
-    // Prevent cloning
     private function __clone() {}
 
-    // Prevent unserialization
     public function __wakeup() {
         throw new Exception("Cannot unserialize singleton");
     }
 }
+?>
