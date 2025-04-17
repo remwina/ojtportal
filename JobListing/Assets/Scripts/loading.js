@@ -12,7 +12,7 @@ async function checkAdminAuth() {
                 closeOnClickOutside: false,
                 closeOnEsc: false
             });
-            window.location.href = 'login.html';
+            window.location.href = '../Frontend/login.html';
             return false;
         }
         return true;
@@ -25,7 +25,7 @@ async function checkAdminAuth() {
             closeOnClickOutside: false,
             closeOnEsc: false
         });
-        window.location.href = 'login.html';
+        window.location.href = '../Frontend/login.html';
         return false;
     }
 }

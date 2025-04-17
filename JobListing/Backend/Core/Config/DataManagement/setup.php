@@ -498,7 +498,7 @@ $setupManager->handleSetup();
             </div>
 
             <div class="text-center">
-                <a href="../../../../../../../Finals_But_Its_ADBMS/JobListing/Frontend/login.html" class="setup-btn">Go to Login Page</a>
+                <a href="../../../../Frontend/login.html" class="setup-btn">Go to Login Page</a>
             </div>
         </div>
     </div>

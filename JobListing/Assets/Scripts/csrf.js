@@ -1,7 +1,7 @@
 const CSRFManager = {
     async init() {
         try {
-            const response = await fetch("../../JobListing/Backend/Core/MAIN.php", {
+            const response = await fetch("../Backend/Core/MAIN.php", {
                 method: 'POST',
                 body: new URLSearchParams({
                     'action': 'csrf_init'
