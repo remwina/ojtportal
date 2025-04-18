@@ -1,66 +1,81 @@
+# Job Placement and Listing Management System
+
 <div align="center">
-
-# 🚀 Job Placement and Listing Management System Setup
-
 <img src="JobListing/Assets/Images/BatStateU-NEU-Logo.png" width="120">
-
 </div>
 
----
+## Overview
+A web-based system for managing job placements and listings, designed for educational institutions. This system facilitates the connection between students, employers, and administrative staff by providing a centralized platform for job opportunities.
 
-## 📋 Prerequisites
-- 🖥️ XAMPP with Apache and MySQL services
-- 🌐 Web browser (Chrome/Firefox recommended)
+## Features
+- User role-based access control (Admin, User)
+- Secure authentication system
+- SR Code validation for students
+- Password policy enforcement
+- Session management
+- CSRF protection
 
-## 🛠️ Quick Setup Steps
+## Technical Requirements
+- PHP 7.4 or higher
+- MySQL 5.7 or higher
+- Apache Web Server
+- XAMPP (recommended for local development)
 
-### 1️⃣ Start XAMPP Services
-- 📱 Open XAMPP Control Panel
-- ▶️ Start both Apache and MySQL services
-- ✅ Ensure both services show green status
+## Installation
 
-### 2️⃣ Access Setup Page
-- 🌍 Open your web browser
-- 📂 Go to: `JobListing/Backend/Core/Config/DataManagement/setup.php`
-- ⚙️ The setup script will automatically:
-  - 🗃️ Create the database
-  - 📊 Initialize required tables
-  - 👤 Create default admin account
+1. **Environment Setup**
+   - Install XAMPP
+   - Start Apache and MySQL services
+   - Ensure ports 80 (Apache) and 3306 (MySQL) are available
 
-### 3️⃣ Verify Setup
-- ⌛ Wait for "Setup Complete" confirmation
-- ✨ You should see success messages for each step
+2. **Database Configuration**
+   - Navigate to `JobListing/Backend/Core/Config/DataManagement/setup.php`
+   - The setup script will automatically:
+     - Create the required database
+     - Initialize necessary tables
+     - Create the default administrator account
 
-### 4️⃣ Access the System
-After successful setup, you can log in at:
-- 🔑 `JobListing/Frontend/login.html`
+3. **System Access**
+   - Access the login page at: `JobListing/Frontend/login.html`
+   - Use the default admin credentials for first-time access
 
-## 👑 Default Admin Account
-```yaml
-Email    : admin@admin.com
-Password : Admin@123
-SR Code  : 21-00001
+## Default Administrator Account
+```
+Email: admin@admin.com
+Password: Admin@123
+SR Code: 21-00001
 ```
 
-## ⚠️ Troubleshooting
-
-If setup fails:
-1. 🔍 Verify XAMPP services are running (Apache and MySQL)
-2. 📡 Check if port 3306 is available for MySQL
-3. 🔄 Try restarting XAMPP services
-
-### Database Connection Details
-```yaml
-Username : root
-Password : root
-Database : joblisting
+## Database Configuration
+```
+Host: localhost
+Username: root
+Password: root
+Database: joblisting
 ```
 
----
+## Security Features
+- Password hashing
+- Input validation
+- XSS protection
+- CSRF token implementation
+- Secure session management
 
-<div align="center">
+## Troubleshooting
+1. Verify XAMPP services are running
+2. Check port availability
+3. Ensure proper file permissions
+4. Clear browser cache if experiencing UI issues
 
-## 💡 Need Help?
-Contact system administrator for assistance
+## Support
+For technical support or bug reports, please contact the system administrator.
 
-</div>
+## Project Structure
+```
+JobListing/
+├── Assets/         # Static resources
+├── Backend/        # Server-side logic
+│   ├── Core/       # Core functionality
+│   └── Shell/      # Authentication handlers
+└── Frontend/       # Client-side interface
+```
