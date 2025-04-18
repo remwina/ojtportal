@@ -41,7 +41,7 @@ class Validators {
         $this->errors = [];
         if (empty($email)) {
             $this->errors[] = ["field" => "email", "message" => "Email is required"];
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        } elseif (!preg_match(EMAIL_FORMAT, $email)) {
             $this->errors[] = ["field" => "email", "message" => "Invalid email format"];
         }
         $this->addToCollectedErrors();
@@ -50,11 +50,9 @@ class Validators {
 
     public function isValidSRCode($srcode) {
         $this->errors = [];
-        $pattern = '/^\d{2}-\d{5}$/';
-
         if (empty($srcode)) {
             $this->errors[] = ["field" => "srcode", "message" => "SR Code is required"];
-        } elseif (!preg_match($pattern, $srcode)) {
+        } elseif (!preg_match(SRCODE_FORMAT, $srcode)) {
             $this->errors[] = ["field" => "srcode", "message" => "Invalid SR Code format. Use XX-XXXXX format"];
         }
         $this->addToCollectedErrors();
@@ -65,8 +63,22 @@ class Validators {
         $this->errors = [];
         if (empty($password)) {
             $this->errors[] = ["field" => "password", "message" => "Password is required"];
-        } elseif (strlen($password) < 6) {
-            $this->errors[] = ["field" => "password", "message" => "Password must be at least 6 characters"];
+        } else {
+            if (!preg_match(UPPERCASE_FORMAT, $password)) {
+                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one uppercase letter"];
+            }
+            if (!preg_match(LOWERCASE_FORMAT, $password)) {
+                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one lowercase letter"];
+            }
+            if (!preg_match(DIGIT_FORMAT, $password)) {
+                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one number"];
+            }
+            if (!preg_match(SPECIAL_CHAR_FORMAT, $password)) {
+                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one special character"];
+            }
+            if (strlen($password) < 6) {
+                $this->errors[] = ["field" => "password", "message" => "Password must be at least 6 characters"];
+            }
         }
 
         if ($confirmPassword !== null) {
@@ -75,6 +87,17 @@ class Validators {
             } elseif ($password !== $confirmPassword) {
                 $this->errors[] = ["field" => "confirm_password", "message" => "Passwords do not match"];
             }
+        }
+        $this->addToCollectedErrors();
+        return empty($this->errors);
+    }
+
+    public function isValidLoginPassword($password) {
+        $this->errors = [];
+        if (empty($password)) {
+            $this->errors[] = ["field" => "password", "message" => "Password is required"];
+        } elseif (!preg_match(PASSWORD_FORMAT, $password)) {
+            $this->errors[] = ["field" => "password", "message" => "Invalid password format."];
         }
         $this->addToCollectedErrors();
         return empty($this->errors);

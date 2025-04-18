@@ -30,7 +30,7 @@ try {
                 'usertype' => 'admin',
                 'srcode' => '21-00001',
                 'email' => 'admin@admin.com',
-                'password' => 'admin123',
+                'password' => 'Admin@123',
                 'status' => 'active'
             ];
             

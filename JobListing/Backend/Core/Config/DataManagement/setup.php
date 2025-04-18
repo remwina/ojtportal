@@ -483,7 +483,7 @@ $setupManager->handleSetup();
                 </div>
                 <div class="card-body">
                     <p><strong>Email:</strong> admin@admin.com</p>
-                    <p><strong>Password:</strong> admin123</p>
+                    <p><strong>Password:</strong> Admin@123</p>
                     <p><strong>SR Code:</strong> 21-00001</p>
                 </div>
             </div>

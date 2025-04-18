@@ -38,7 +38,7 @@ After successful setup, you can log in at:
 ## 👑 Default Admin Account
 ```yaml
 Email    : admin@admin.com
-Password : admin123
+Password : Admin@123
 SR Code  : 21-00001
 ```
 

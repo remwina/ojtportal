@@ -30,17 +30,20 @@ class UserReg {
             return $validationResult;
         }
 
-        if ($this->db->checkEmailExists($email)) {
-            return [
-                "success" => false,
-                "errors" => [["field" => "email", "message" => "Email already exists"]]
-            ];
-        }
+        $emailExists = $this->db->checkEmailExists($email);
+        $srcodeExists = $this->db->checkSRCodeExists($srcode);
 
-        if ($this->db->checkSRCodeExists($srcode)) {
+        if ($emailExists || $srcodeExists) {
+            $errors = [];
+            if ($emailExists) {
+                $errors[] = ["field" => "email", "message" => "Email already exists"];
+            }
+            if ($srcodeExists) {
+                $errors[] = ["field" => "srcode", "message" => "SR Code already exists"];
+            }
             return [
                 "success" => false,
-                "errors" => [["field" => "srcode", "message" => "SR Code already exists"]]
+                "errors" => $errors
             ];
         }
 

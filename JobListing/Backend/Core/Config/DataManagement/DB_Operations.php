@@ -163,7 +163,7 @@ class SQL_Operations {
                 $this->createUser([
                     'srcode' => '21-00001',
                     'email' => 'admin@admin.com',
-                    'password' => 'admin123',
+                    'password' => 'Admin@123',
                     'usertype' => 'admin',
                     'status' => 'active'
                 ]);

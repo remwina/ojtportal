@@ -21,7 +21,7 @@ class Login {
         $this->validator->clearAllErrors();
 
         $this->validator->isValidEmail($email);
-        $this->validator->isValidPassword($password);
+        $this->validator->isValidLoginPassword($password);
         
         $validationErrors = $this->validator->getErrors();
         if (!$validationErrors['success']) {
@@ -32,14 +32,14 @@ class Login {
         if (!$user) {
             return [
                 "success" => false,
-                "errors" => [["field" => "email", "message" => "Invalid email or password"]]
+                "errors" => [["field" => "email", "message" => "User not found"]]
             ];
         }
 
         if (!password_verify($password, $user['password'])) {
             return [
                 "success" => false,
-                "errors" => [["field" => "password", "message" => "Invalid email or password"]]
+                "errors" => [["field" => "password", "message" => "Incorrect password"]]
             ];
         }
 
