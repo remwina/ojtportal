@@ -1,5 +1,6 @@
 <?php
 require_once 'DB_Connect.php';
+require_once 'DatabaseSchema.php';
 
 class SQL_Operations {
     private $conn;
@@ -20,50 +21,30 @@ class SQL_Operations {
     }
 
     public function authenticate($email) {
-        try {
-            $conn = $this->getConnection();
-            $sql = "SELECT 
-                    u.id,
-                    u.srcode,
-                    u.email,
-                    u.password,
-                    u.usertype,
-                    u.status
-                    FROM users u
-                    WHERE u.email = ? AND u.status = 'active'
-                    LIMIT 1";
+        $conn = $this->getConnection();
+        $sql = "SELECT u.id, u.srcode, u.email, u.password, u.usertype, u.status 
+                FROM users u WHERE u.email = ? AND u.status = 'active' LIMIT 1";
 
-            $stmt = $conn->prepare($sql);
-            if (!$stmt) {
-                throw new Exception("Failed to prepare authentication query");
-            }
-
-            $stmt->bind_param('s', $email);
-            if (!$stmt->execute()) {
-                throw new Exception("Authentication query failed");
-            }
-
-            $result = $stmt->get_result();
-            return $result->fetch_assoc();
-        } catch (Exception $e) {
-            throw $e;
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception("Failed to prepare authentication query");
         }
+
+        $stmt->bind_param('s', $email);
+        if (!$stmt->execute()) {
+            throw new Exception("Authentication failed");
+        }
+
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
     }
 
     public function checkEmailExists($email) {
-        try {
-            return $this->checkExists('users', ['email' => $email]);
-        } catch (Exception $e) {
-            throw new Exception("Email verification failed");
-        }
+        return $this->checkExists('users', ['email' => $email]);
     }
 
     public function checkSRCodeExists($srcode) {
-        try {
-            return $this->checkExists('users', ['srcode' => $srcode]);
-        } catch (Exception $e) {
-            throw new Exception("SR Code verification failed");
-        }
+        return $this->checkExists('users', ['srcode' => $srcode]);
     }
 
     public function createUser($userData) {
@@ -71,23 +52,27 @@ class SQL_Operations {
         $conn->begin_transaction();
 
         try {
-            $requiredFields = ['srcode', 'email', 'password', 'usertype', 'status'];
+            $requiredFields = ['srcode', 'firstname', 'lastname', 'email', 'password', 'course', 'section', 'usertype', 'status'];
             foreach ($requiredFields as $field) {
                 if (!isset($userData[$field]) || trim($userData[$field]) === '') {
                     throw new Exception("Missing required field: $field");
                 }
             }
 
-            $stmt = $conn->prepare("INSERT INTO users (srcode, email, password, usertype, status) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO users (srcode, firstname, lastname, email, password, course_id, section, usertype, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) {
                 throw new Exception("Failed to prepare user creation query");
             }
 
             $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
-            $stmt->bind_param('sssss', 
+            $stmt->bind_param('sssssisss', 
                 $userData['srcode'],
+                $userData['firstname'],
+                $userData['lastname'],
                 $userData['email'],
                 $hashedPassword,
+                $userData['course'],
+                $userData['section'],
                 $userData['usertype'],
                 $userData['status']
             );
@@ -98,8 +83,8 @@ class SQL_Operations {
 
             $userId = $conn->insert_id;
             $stmt->close();
-
             $conn->commit();
+            
             return [
                 'success' => true,
                 'user_id' => $userId,
@@ -141,32 +126,36 @@ class SQL_Operations {
     public function initDatabase() {
         $conn = $this->getConnection();
         try {
-            $sql = "CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                srcode VARCHAR(9) UNIQUE NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                usertype ENUM('admin', 'user', 'none') NOT NULL DEFAULT 'none',
-                status ENUM('active', 'inactive') DEFAULT 'active',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                deleted_at TIMESTAMP NULL,
-                INDEX idx_email_status (email, status),
-                INDEX idx_srcode_status (srcode, status)
-            )";
+            foreach (DatabaseSchema::getTableDefinitions() as $tableName => $definition) {
+                if (!$conn->query($definition)) {
+                    throw new Exception("Failed to create $tableName table: " . $conn->error);
+                }
+            }
 
-            if (!$conn->query($sql)) {
-                throw new Exception("Failed to create users table: " . $conn->error);
+            $result = $conn->query("SELECT COUNT(*) as count FROM departments");
+            $hasDepartments = ($result && $result->fetch_assoc()['count'] > 0);
+
+            $result = $conn->query("SELECT COUNT(*) as count FROM courses");
+            $hasCourses = ($result && $result->fetch_assoc()['count'] > 0);
+
+            if (!$hasDepartments && !$hasCourses) {
+                $stmt = $conn->prepare("INSERT INTO departments (name) VALUES (?)");
+                foreach (DatabaseSchema::getDepartments() as $dept) {
+                    $stmt->bind_param('s', $dept);
+                    $stmt->execute();
+                }
+                $stmt->close();
+
+                $stmt = $conn->prepare("INSERT INTO courses (name, department_id) VALUES (?, ?)");
+                foreach (DatabaseSchema::getCourses() as $course) {
+                    $stmt->bind_param('si', $course[0], $course[1]);
+                    $stmt->execute();
+                }
+                $stmt->close();
             }
 
             if (!$this->checkEmailExists('admin@admin.com')) {
-                $this->createUser([
-                    'srcode' => '21-00001',
-                    'email' => 'admin@admin.com',
-                    'password' => 'Admin@123',
-                    'usertype' => 'admin',
-                    'status' => 'active'
-                ]);
+                $this->createUser(DatabaseSchema::getDefaultAdmin());
             }
             
             return ["success" => true, "message" => "Database initialized successfully"];

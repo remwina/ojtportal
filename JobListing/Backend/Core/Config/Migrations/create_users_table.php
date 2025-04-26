@@ -1,7 +1,7 @@
 <?php
-
 require_once __DIR__ . '/../DataManagement/DB_Connect.php';
 require_once __DIR__ . '/../DataManagement/DB_Operations.php';
+require_once __DIR__ . '/../DataManagement/DatabaseSchema.php';
 
 class CreateUsersTable {
     private $dbOps;
@@ -14,23 +14,30 @@ class CreateUsersTable {
         $conn = $this->dbOps->getConnection();
         
         try {
-            $sql = "CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                srcode VARCHAR(9) UNIQUE NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                usertype ENUM('admin', 'user', 'none') NOT NULL DEFAULT 'none',
-                status ENUM('active', 'inactive') DEFAULT 'active',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                deleted_at TIMESTAMP NULL
-            )";
-            
-            if ($conn->query($sql)) {
-                echo "Users table created successfully!\n";
-            } else {
-                throw new Exception("Error creating users table: " . $conn->error);
+            // Create tables using schema definitions
+            foreach (DatabaseSchema::getTableDefinitions() as $tableName => $definition) {
+                if (!$conn->query($definition)) {
+                    throw new Exception("Error creating $tableName table: " . $conn->error);
+                }
             }
+
+            // Insert departments
+            $stmt = $conn->prepare("INSERT INTO departments (name) VALUES (?)");
+            foreach (DatabaseSchema::getDepartments() as $dept) {
+                $stmt->bind_param('s', $dept);
+                $stmt->execute();
+            }
+            $stmt->close();
+
+            // Insert courses
+            $stmt = $conn->prepare("INSERT INTO courses (name, department_id) VALUES (?, ?)");
+            foreach (DatabaseSchema::getCourses() as $course) {
+                $stmt->bind_param('si', $course[0], $course[1]);
+                $stmt->execute();
+            }
+            $stmt->close();
+
+            echo "All tables created and populated successfully!\n";
         } catch (Exception $e) {
             echo "Error: " . $e->getMessage() . "\n";
             throw $e;
@@ -41,16 +48,15 @@ class CreateUsersTable {
         $conn = $this->dbOps->getConnection();
         
         try {
-            $sql = "DROP TABLE IF EXISTS users";
-            if ($conn->query($sql)) {
-                echo "Users table dropped successfully!\n";
-            } else {
-                throw new Exception("Error dropping users table: " . $conn->error);
+            // Drop tables in reverse order due to foreign key constraints
+            $tables = array_reverse(array_keys(DatabaseSchema::getTableDefinitions()));
+            foreach ($tables as $table) {
+                $conn->query("DROP TABLE IF EXISTS $table");
             }
+            echo "All tables dropped successfully!\n";
         } catch (Exception $e) {
             echo "Error: " . $e->getMessage() . "\n";
             throw $e;
         }
     }
 }
-?>

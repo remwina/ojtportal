@@ -1,54 +1,83 @@
 <?php
-require_once __DIR__ . '/Database.php';
-require_once __DIR__ . '/../Migrations/create_users_table.php';
-require_once __DIR__ . '/Models/User.php';
 require_once __DIR__ . '/DB_Operations.php';
+require_once __DIR__ . '/../Migrations/create_users_table.php';
 
-try {
-    echo "Running migrations...\n";
-    
-    $action = isset($argv[1]) ? strtolower($argv[1]) : 'up';
-    
-    $dbOps = new SQL_Operations([
-        'host' => 'localhost',
-        'username' => 'root',
-        'password' => 'root',
-        'dbname' => 'joblisting'
-    ]);
-    
-    $migration = new CreateUsersTable($dbOps);
-    
-    if ($action === 'down') {
-        $migration->down();
-        echo "Migration rolled back successfully!\n";
-    } else {
-        $migration->up();
-        echo "Migration completed!\n";
-        
+class MigrationManager {
+    private $dbOps;
+    private $output = [];
+
+    public function __construct() {
+        $this->dbOps = new SQL_Operations();
+    }
+
+    private function log($message) {
+        $this->output[] = $message;
+    }
+
+    public function migrate($action = 'up') {
         try {
-            $adminData = [
-                'usertype' => 'admin',
-                'srcode' => '21-00001',
-                'email' => 'admin@admin.com',
-                'password' => 'Admin@123',
-                'status' => 'active'
-            ];
+            $migration = new CreateUsersTable($this->dbOps);
             
-            if (!$dbOps->checkEmailExists('admin@admin.com') && 
-                !$dbOps->checkSRCodeExists('21-00001')) {
-                $dbOps->createUser($adminData);
-                echo "Default admin user created successfully!\n";
-                echo "Email: admin@admin.com\n";
-                echo "Password: admin123\n";
+            if ($action === 'down') {
+                $migration->down();
+                $this->log("Migration rolled back");
             } else {
-                echo "Default admin user already exists - skipping creation\n";
+                $migration->up();
+                $this->log("Migration completed");
+                $this->createDefaultAdmin();
             }
+            
+            return [
+                'success' => true,
+                'message' => 'Migration ' . ($action === 'down' ? 'rollback' : 'execution') . ' completed',
+                'logs' => $this->output
+            ];
         } catch (Exception $e) {
-            echo "Warning: Could not create default admin user: " . $e->getMessage() . "\n";
+            $this->log($e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'logs' => $this->output
+            ];
         }
     }
-    
-} catch (Exception $e) {
-    echo "Migration failed: " . $e->getMessage() . "\n";
+
+    private function createDefaultAdmin() {
+        try {
+            if (!$this->dbOps->checkEmailExists('admin@admin.com')) {
+                $adminData = [
+                    'usertype' => 'admin',
+                    'srcode' => '21-00001',
+                    'firstname' => 'Admin',
+                    'lastname' => 'User',
+                    'email' => 'admin@admin.com',
+                    'password' => 'Admin@123',
+                    'course' => 1,
+                    'section' => 'N/A',
+                    'status' => 'active'
+                ];
+
+                $result = $this->dbOps->createUser($adminData);
+                if (!$result['success']) {
+                    $this->log("Failed to create admin user");
+                }
+            }
+        } catch (Exception $e) {
+            $this->log("Admin user creation failed: " . $e->getMessage());
+        }
+    }
 }
-?>
+
+if (php_sapi_name() === 'cli') {
+    $action = isset($argv[1]) ? strtolower($argv[1]) : 'up';
+    $manager = new MigrationManager();
+    $result = $manager->migrate($action);
+    exit($result['success'] ? 0 : 1);
+}
+
+if (isset($_SERVER['REQUEST_METHOD'])) {
+    header('Content-Type: application/json');
+    $action = $_POST['action'] ?? 'up';
+    $manager = new MigrationManager();
+    echo json_encode($manager->migrate($action));
+}

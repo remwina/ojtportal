@@ -10,6 +10,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 require_once __DIR__ . '/DB_Operations.php';
+require_once __DIR__ . '/DatabaseSchema.php';
 
 class SetupManager {
     private const REQUIRED_PHP_VERSION = '7.4.0';
@@ -88,8 +89,8 @@ class SetupManager {
                 case 'run_migration':
                     if (isset($_POST['confirm'])) {
                         if ($this->dbOps) {
-                            $this->dbOps->initDatabase();
-                            $this->message = "Database setup completed successfully!";
+                            $result = $this->dbOps->initDatabase();
+                            $this->message = $result['message'];
                             $this->step = 'complete';
                         } else {
                             throw new Exception("Database operations not initialized");

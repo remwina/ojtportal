@@ -13,7 +13,7 @@ class UserReg {
         $this->db = new SQL_Operations();
     }
 
-    public function registerUser($usertype, $srcode, $email, $password, $conpass = null) {
+    public function registerUser($usertype, $srcode, $email, $password, $conpass = null, $firstname = '', $lastname = '', $course_id = '', $section = '') {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -24,6 +24,7 @@ class UserReg {
         $this->validator->isValidEmail($email);
         $this->validator->isValidSRCode($srcode);
         $this->validator->isValidPassword($password, $conpass);
+        $this->validator->isValidUserInfo($firstname, $lastname, $course_id, $section);
 
         $validationResult = $this->validator->getErrors();
         if (!$validationResult['success']) {
@@ -51,8 +52,12 @@ class UserReg {
             return $this->db->createUser([
                 'usertype' => $usertype,
                 'srcode' => $srcode,
+                'firstname' => $firstname,
+                'lastname' => $lastname,
                 'email' => $email,
                 'password' => $password,
+                'course' => $course_id,
+                'section' => $section,
                 'status' => 'active'
             ]);
         } catch (Exception $e) {

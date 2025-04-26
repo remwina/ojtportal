@@ -9,16 +9,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 header('Content-Type: application/json');
 
 try {    
     $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : ($_GET['action'] ?? null);
     $data = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
     
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, ['login', 'csrf_init'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, ['login', 'csrf_init', 'init_db'])) {
         if (!isset($_POST['csrf_token'])) {
             throw new Exception("CSRF token missing");
         }
@@ -84,7 +81,11 @@ try {
                 $data['srcode'] ?? '',
                 $data['email'] ?? '',
                 $data['password'] ?? '',
-                $data['confirm_password'] ?? ''
+                $data['confirm_password'] ?? '',
+                $data['firstname'] ?? '',
+                $data['lastname'] ?? '',
+                $data['course'] ?? '',  // Now expecting course_id
+                $data['section'] ?? ''
             );
             
             if ($response['success']) {
@@ -112,6 +113,40 @@ try {
                 'usertype' => $_SESSION['usertype'] ?? null
             ];
             break;
+
+        case 'getDepartments':
+            $dbOps = new SQL_Operations();
+            $conn = $dbOps->getConnection();
+            $result = $conn->query("SELECT * FROM departments ORDER BY name");
+            $departments = [];
+            while ($row = $result->fetch_assoc()) {
+                $departments[] = $row;
+            }
+            $response = [
+                'success' => true,
+                'departments' => $departments
+            ];
+            break;
+
+        case 'getCoursesByDepartment':
+            if (!isset($data['department_id'])) {
+                throw new Exception("Department ID is required");
+            }
+            $dbOps = new SQL_Operations();
+            $conn = $dbOps->getConnection();
+            $stmt = $conn->prepare("SELECT * FROM courses WHERE department_id = ? ORDER BY name");
+            $stmt->bind_param('i', $data['department_id']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $courses = [];
+            while ($row = $result->fetch_assoc()) {
+                $courses[] = $row;
+            }
+            $response = [
+                'success' => true,
+                'courses' => $courses
+            ];
+            break;
             
         default:
             throw new Exception("Invalid action: " . $action);
@@ -126,4 +161,5 @@ try {
         "message" => $e->getMessage()
     ]);
 }
+
 ?>

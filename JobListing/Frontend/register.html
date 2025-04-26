@@ -77,6 +77,40 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="firstname">First Name</label>
+                        <input type="text" id="firstname" name="firstname" placeholder="Enter your first name">
+                        <div id="firstname-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lastname">Last Name</label>
+                        <input type="text" id="lastname" name="lastname" placeholder="Enter your last name">
+                        <div id="lastname-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <select id="department" name="department">
+                            <option value="">Select Department</option>
+                        </select>
+                        <div id="department-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course">Course</label>
+                        <select id="course" name="course" disabled>
+                            <option value="">Select Course</option>
+                        </select>
+                        <div id="course-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="section">Section</label>
+                        <input type="text" id="section" name="section" placeholder="Enter your section" maxlength="4">
+                        <div id="section-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
                         <label for="srcode">SR Code</label>
                         <input type="text" id="srcode" name="srcode" placeholder="Enter SR Code (XX-XXXXX)" maxlength="8">
                         <div id="srcode-error" class="error-message"></div>
@@ -100,7 +134,7 @@
                         <div id="confirm_password-error" class="error-message"></div>
                     </div>
 
-                    <button type="submit" class="auth-btn primary">
+                    <button type="submit" class="auth-btn btn-base primary">
                         <i class="fas fa-user-plus"></i>
                         <span class="btn-text">Create Account</span>
                         <span class="btn-loader">
@@ -125,6 +159,66 @@
         document.addEventListener('DOMContentLoaded', async function() {
             await CSRFManager.init();
             CSRFManager.updateFormToken(document.getElementById('registerForm'));
+
+            const departmentSelect = document.getElementById('department');
+            const courseSelect = document.getElementById('course');
+
+            // Fetch departments
+            try {
+                const response = await fetch('../Backend/Core/MAIN.php?action=getDepartments');
+                const data = await response.json();
+                if (data.success && data.departments) {
+                    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                } else {
+                    throw new Error(data.message || 'Failed to load departments');
+                }
+            } catch (error) {
+                departmentSelect.innerHTML = '<option value="">Failed to load departments</option>';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load departments. Please try again.',
+                    timer: 3000
+                });
+            }
+
+            // Handle department change
+            departmentSelect.addEventListener('change', async function() {
+                courseSelect.disabled = true;
+                courseSelect.innerHTML = '<option value="">Select Course</option>';
+                
+                if (this.value) {
+                    try {
+                        const response = await fetch(`../Backend/Core/MAIN.php?action=getCoursesByDepartment&department_id=${this.value}`);
+                        const data = await response.json();
+                        if (data.success && data.courses) {
+                            data.courses.forEach(course => {
+                                const option = document.createElement('option');
+                                option.value = course.id;
+                                option.textContent = course.name;
+                                courseSelect.appendChild(option);
+                            });
+                            courseSelect.disabled = false;
+                        } else {
+                            throw new Error(data.message || 'Failed to load courses');
+                        }
+                    } catch (error) {
+                        courseSelect.innerHTML = '<option value="">Failed to load courses</option>';
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to load courses. Please try again.',
+                            timer: 3000
+                        });
+                    }
+                }
+            });
         });
     </script>
 </body>
