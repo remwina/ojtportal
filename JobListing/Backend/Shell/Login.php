@@ -43,11 +43,22 @@ class Login {
             ];
         }
 
-        $_SESSION['user_id'] = $user['id'];
+        // Store all necessary session data
+        $_SESSION['student_id'] = $user['id'];
         $_SESSION['usertype'] = $user['usertype'];
         $_SESSION['srcode'] = $user['srcode'];
+        $_SESSION['student_name'] = $user['firstname'] . ' ' . $user['lastname'];
+        $_SESSION['email'] = $user['email'];
+        $_SESSION['course_id'] = $user['course_id'];
+        $_SESSION['section'] = $user['section'];
 
-        $redirect = $user['usertype'] === 'admin' ? "../Frontend/Placeholder1-Admin.html" : "../Frontend/Placeholder3-User.html";
+        $redirect = $user['usertype'] === 'admin' ? "../Frontend/Placeholder1-Admin.html" : "../Dashboard/dashboard.php";
+        if ($user['usertype'] === 'none') {
+            return [
+                "success" => false,
+                "errors" => [["field" => "usertype", "message" => "User type not set"]]
+            ];
+        }
 
         return [
             "success" => true,

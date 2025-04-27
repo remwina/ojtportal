@@ -124,36 +124,10 @@ class SQL_Operations {
     }
 
     public function initDatabase() {
-        $conn = $this->getConnection();
         try {
-            foreach (DatabaseSchema::getTableDefinitions() as $tableName => $definition) {
-                if (!$conn->query($definition)) {
-                    throw new Exception("Failed to create $tableName table: " . $conn->error);
-                }
-            }
-
-            $result = $conn->query("SELECT COUNT(*) as count FROM departments");
-            $hasDepartments = ($result && $result->fetch_assoc()['count'] > 0);
-
-            $result = $conn->query("SELECT COUNT(*) as count FROM courses");
-            $hasCourses = ($result && $result->fetch_assoc()['count'] > 0);
-
-            if (!$hasDepartments && !$hasCourses) {
-                $stmt = $conn->prepare("INSERT INTO departments (name) VALUES (?)");
-                foreach (DatabaseSchema::getDepartments() as $dept) {
-                    $stmt->bind_param('s', $dept);
-                    $stmt->execute();
-                }
-                $stmt->close();
-
-                $stmt = $conn->prepare("INSERT INTO courses (name, department_id) VALUES (?, ?)");
-                foreach (DatabaseSchema::getCourses() as $course) {
-                    $stmt->bind_param('si', $course[0], $course[1]);
-                    $stmt->execute();
-                }
-                $stmt->close();
-            }
-
+            $conn = $this->getConnection();
+            DatabaseSchema::initializeDatabase($conn);
+            
             if (!$this->checkEmailExists('admin@admin.com')) {
                 $this->createUser(DatabaseSchema::getDefaultAdmin());
             }
@@ -161,6 +135,21 @@ class SQL_Operations {
             return ["success" => true, "message" => "Database initialized successfully"];
         } catch (Exception $e) {
             throw new Exception("Database initialization failed: " . $e->getMessage());
+        }
+    }
+
+    public function resetDatabase() {
+        try {
+            $conn = $this->getConnection();
+            DatabaseSchema::resetDatabase($conn);
+            
+            if (!$this->checkEmailExists('admin@admin.com')) {
+                $this->createUser(DatabaseSchema::getDefaultAdmin());
+            }
+            
+            return ["success" => true, "message" => "Database reset successfully"];
+        } catch (Exception $e) {
+            throw new Exception("Database reset failed: " . $e->getMessage());
         }
     }
 
