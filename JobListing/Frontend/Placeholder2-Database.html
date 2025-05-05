@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Management</title>
+    <link rel="stylesheet" href="../Assets/Styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <main class="hero-section">
+        <div class="left-section">
+            <div class="animated-bg"></div>
+            <div class="content-wrapper">
+                <div class="school-header">
+                    <img src="../Assets/Images/BatStateU-NEU-Logo.png" alt="BatStateU Logo">
+                    <div class="school-info">
+                        <div class="school-name">Batangas State University</div>
+                        <div class="campus-name">The NEU - Lipa Campus</div>
+                    </div>
+                </div>
+                
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1>Database Management</h1>
+                        <p class="hero-subtitle">Set up and manage your database configuration</p>
+                    </div>
+                    <div class="floating-elements">
+                        <div class="floating-icon" style="--delay: 0">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 1">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 2">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 3">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="floating-icon" style="--delay: 4">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <div class="floating-icon white-icon" style="--delay: 5">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="floating-elements right-icons">
+                <div class="floating-icon red-icon" style="--delay: 0">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="floating-icon red-icon" style="--delay: 1">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div class="floating-icon red-icon" style="--delay: 2">
+                    <i class="fas fa-cogs"></i>
+                </div>
+            </div>
+            
+            <div class="auth-container">
+                <h2>Quick Actions</h2>
+                <p class="auth-subtitle">Manage your database configuration</p>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <button id="createBtn" class="auth-btn primary" style="width: 100%;">
+                        <i class="fas fa-database"></i>
+                        <span class="btn-text">Create Database</span>
+                        <span class="btn-loader">
+                            <svg class="spinner" viewBox="0 0 50 50">
+                                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                            </svg>
+                        </span>
+                    </button>
+                    <button id="resetBtn" class="auth-btn secondary" style="width: 100%;">
+                        <i class="fas fa-trash-alt"></i>
+                        <span class="btn-text">Reset Database</span>
+                        <span class="btn-loader">
+                            <svg class="spinner" viewBox="0 0 50 50">
+                                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                            </svg>
+                        </span>
+                    </button>
+                    <a href="Placeholder1-Admin.html" class="auth-btn secondary" style="width: 100%;">
+                        <i class="fas fa-arrow-left"></i>
+                        Return to Dashboard
+                    </a>
+                </div>
+
+                <div id="statusMessage" class="status-message" style="display: none; margin-top: 1.5rem;"></div>
+                <div id="consoleOutput" class="console-output" style="display: none; margin-top: 1rem;"></div>
+                <input type="hidden" id="csrf_token" value="">
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+    <script src="../Assets/Scripts/csrf.js"></script>
+    <script src="../Assets/Scripts/loading.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await CSRFManager.init();
+            document.getElementById('csrf_token').value = CSRFManager.getToken();
+
+            const createBtn = document.getElementById('createBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            const consoleOutput = document.getElementById('consoleOutput');
+
+            createBtn.addEventListener('click', () => 
+                handleDatabaseOperation(createBtn, statusMessage, consoleOutput, false)
+            );
+            
+            resetBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset the database? This will delete all existing data.')) {
+                    handleDatabaseOperation(resetBtn, statusMessage, consoleOutput, true);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
