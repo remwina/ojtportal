@@ -133,3 +133,7 @@ error:0A00010B:SSL routines::wrong version number in C:\xampp\htdocs\ojtportal-A
 [06-May-2025 20:51:33 Europe/Berlin] Invalid security token
 [06-May-2025 20:51:33 Europe/Berlin] Attempting password reset with token: 38cfb09f4f...
 [06-May-2025 20:51:33 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 21:06:15 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 21:06:28 Europe/Berlin] Attempting password reset with token: d8ad77e6ab...
+[06-May-2025 21:06:28 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 21:06:28 Europe/Berlin] Invalid security token

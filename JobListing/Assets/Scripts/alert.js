@@ -100,6 +100,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                     const action = formData.get('action');
                     if (action === 'register') {
                         window.location.href = 'login.html';
+                    } else if (action === 'login' && data.redirect) {
+                        window.location.href = data.redirect;
                     } else if (data.redirect) {
                         window.location.href = data.redirect;
                     }

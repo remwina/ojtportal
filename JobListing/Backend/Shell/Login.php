@@ -46,16 +46,21 @@ class Login {
             }
             
             $_SESSION['user_id'] = $user['id'];
-            $_SESSION['student_id'] = $user['id'];  // Adding this for dashboard compatibility
+            $_SESSION['student_id'] = $user['id'];
             $_SESSION['usertype'] = $user['usertype'];
             $_SESSION['srcode'] = $user['srcode'];
-            $_SESSION['student_name'] = $user['firstname'] . ' ' . $user['lastname'];  // Adding full name to session
+            $_SESSION['student_name'] = $user['firstname'] . ' ' . $user['lastname'];
+            
+            // Determine redirect based on user type
+            $redirect = $user['usertype'] === 'admin' ? 
+                       '../Frontend/Placeholder1-Admin.html' : 
+                       '../Dashboard/dashboard.php';
             
             return [
                 'success' => true,
                 'message' => 'Login successful',
                 'usertype' => $user['usertype'],
-                'redirect' => '../Dashboard/dashboard.php'  // Adding redirect URL
+                'redirect' => $redirect
             ];
             
         } catch (Exception $e) {
