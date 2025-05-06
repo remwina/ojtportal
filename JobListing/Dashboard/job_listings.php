@@ -373,7 +373,7 @@ $student_name = $_SESSION['student_name'];
     </style>
 </head>
 <body>
-    <div class="container-fluid">
+<div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 sidebar">
@@ -514,46 +514,106 @@ $student_name = $_SESSION['student_name'];
 
                 <!-- Job Cards -->
                 <div class="row" id="job-listings-container">
-                    <?php foreach ($jobs as $job): ?>
                     <div class="col-md-6">
-                        <div class="job-card" 
-                             data-job-type="<?php echo htmlspecialchars(ucfirst($job['job_type'])); ?>" 
-                             data-work-mode="<?php echo htmlspecialchars($job['location'] == 'Remote' ? 'Remote' : 'On-site'); ?>"
-                             data-salary="<?php echo htmlspecialchars($job['salary_range']); ?>">
+                        <div class="job-card" data-job-type="Internship" data-work-mode="Remote" data-experience="Entry Level" data-salary="17500">
                             <i class="bi bi-bookmark bookmark-icon"></i>
                             <div class="d-flex align-items-center mb-3">
-                                <img src="<?php echo htmlspecialchars($job['logo_path']); ?>" 
-                                     alt="<?php echo htmlspecialchars($job['company_name']); ?> Logo" 
-                                     class="company-logo me-3">
+                                <img src="https://logo.clearbit.com/accenture.com" alt="Accenture Logo" class="company-logo me-3">
                                 <div>
-                                    <h5 class="job-title"><?php echo htmlspecialchars($job['title']); ?></h5>
-                                    <p class="company-name"><?php echo htmlspecialchars($job['company_name']); ?></p>
+                                    <h5 class="job-title">Web Developer Intern</h5>
+                                    <p class="company-name">Accenture Philippines</p>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <?php 
-                                $tags = explode(',', $job['tags']);
-                                foreach ($tags as $tag): ?>
-                                    <span class="badge bg-primary"><?php echo htmlspecialchars(trim($tag)); ?></span>
-                                <?php endforeach; ?>
-                                <span class="badge <?php echo $job['location'] == 'Remote' ? 'badge-remote' : 'badge-onsite'; ?>">
-                                    <i class="bi <?php echo $job['location'] == 'Remote' ? 'bi-laptop' : 'bi-building'; ?>"></i>
-                                    <?php echo htmlspecialchars($job['location']); ?>
-                                </span>
+                                <span class="badge badge-web"><i class="bi bi-code-slash"></i> Web Development</span>
+                                <span class="badge badge-remote"><i class="bi bi-laptop"></i> Remote</span>
+                                <span class="badge badge-php"><i class="bi bi-filetype-php"></i> PHP</span>
                             </div>
                             <div class="job-details">
-                                <p class="mb-2"><i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($job['location']); ?></p>
-                                <p class="mb-2"><i class="bi bi-calendar3"></i> Posted <?php echo timeAgo($job['created_at']); ?></p>
-                                <p class="mb-2"><i class="bi bi-currency-dollar"></i> 
-                                    <span class="salary"><?php echo htmlspecialchars($job['salary_range']); ?></span>
-                                </p>
+                                <p class="mb-2"><i class="bi bi-geo-alt"></i> Manila, Philippines</p>
+                                <p class="mb-2"><i class="bi bi-calendar3"></i> Posted 2 days ago</p>
+                                <p class="mb-2"><i class="bi bi-currency-dollar"></i> <span class="salary">₱15,000 - ₱20,000/month</span></p>
                             </div>
-                            <button class="btn apply-btn btn-sm mt-3" data-job-id="<?php echo $job['id']; ?>">
+                            <button class="btn apply-btn btn-sm mt-3">
                                 <i class="bi bi-send"></i> Apply Now
                             </button>
                         </div>
                     </div>
-                    <?php endforeach; ?>
+                    <div class="col-md-6">
+                        <div class="job-card" data-job-type="Internship" data-work-mode="Hybrid" data-experience="Entry Level" data-salary="15000">
+                            <i class="bi bi-bookmark bookmark-icon"></i>
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://logo.clearbit.com/ibm.com" alt="IBM Logo" class="company-logo me-3">
+                                <div>
+                                    <h5 class="job-title">Software QA Intern</h5>
+                                    <p class="company-name">IBM Philippines</p>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <span class="badge badge-testing"><i class="bi bi-check-circle"></i> Quality Assurance</span>
+                                <span class="badge badge-hybrid"><i class="bi bi-building"></i> Hybrid</span>
+                                <span class="badge badge-testing"><i class="bi bi-bug"></i> Testing</span>
+                            </div>
+                            <div class="job-details">
+                                <p class="mb-2"><i class="bi bi-geo-alt"></i> Makati, Philippines</p>
+                                <p class="mb-2"><i class="bi bi-calendar3"></i> Posted 3 days ago</p>
+                                <p class="mb-2"><i class="bi bi-currency-dollar"></i> <span class="salary">₱12,000 - ₱18,000/month</span></p>
+                            </div>
+                            <button class="btn apply-btn btn-sm mt-3">
+                                <i class="bi bi-send"></i> Apply Now
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="job-card" data-job-type="Full Time" data-work-mode="On-site" data-experience="Intermediate" data-salary="25000">
+                            <i class="bi bi-bookmark bookmark-icon"></i>
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://logo.clearbit.com/google.com" alt="Google Logo" class="company-logo me-3">
+                                <div>
+                                    <h5 class="job-title">Frontend Developer</h5>
+                                    <p class="company-name">Google Philippines</p>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <span class="badge badge-web"><i class="bi bi-code-slash"></i> Frontend Dev</span>
+                                <span class="badge bg-success"><i class="bi bi-building"></i> On-site</span>
+                                <span class="badge bg-warning text-dark"><i class="bi bi-graph-up"></i> Intermediate</span>
+                            </div>
+                            <div class="job-details">
+                                <p class="mb-2"><i class="bi bi-geo-alt"></i> Taguig, Philippines</p>
+                                <p class="mb-2"><i class="bi bi-calendar3"></i> Posted 5 days ago</p>
+                                <p class="mb-2"><i class="bi bi-currency-dollar"></i> <span class="salary">₱20,000 - ₱30,000/month</span></p>
+                            </div>
+                            <button class="btn apply-btn btn-sm mt-3">
+                                <i class="bi bi-send"></i> Apply Now
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="job-card" data-job-type="Part Time" data-work-mode="Remote" data-experience="Advanced" data-salary="35000">
+                            <i class="bi bi-bookmark bookmark-icon"></i>
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://logo.clearbit.com/microsoft.com" alt="Microsoft Logo" class="company-logo me-3">
+                                <div>
+                                    <h5 class="job-title">Cloud Solutions Architect (Part-Time)</h5>
+                                    <p class="company-name">Microsoft Philippines</p>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <span class="badge badge-primary"><i class="bi bi-cloud"></i> Cloud Computing</span>
+                                <span class="badge badge-remote"><i class="bi bi-laptop"></i> Remote</span>
+                                 <span class="badge bg-danger"><i class="bi bi-bar-chart-line"></i> Advanced</span>
+                            </div>
+                            <div class="job-details">
+                                <p class="mb-2"><i class="bi bi-geo-alt"></i> Remote</p>
+                                <p class="mb-2"><i class="bi bi-calendar3"></i> Posted 1 week ago</p>
+                                <p class="mb-2"><i class="bi bi-currency-dollar"></i> <span class="salary">₱30,000 - ₱40,000/month</span></p>
+                            </div>
+                            <button class="btn apply-btn btn-sm mt-3">
+                                <i class="bi bi-send"></i> Apply Now
+                            </button>
+                        </div>
+                    </div>
                     <div id="no-jobs-message" class="col-12 text-center" style="display: none;">
                         <p class="fs-5 text-muted mt-4">No jobs match the current filters.</p>
                     </div>

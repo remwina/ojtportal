@@ -280,7 +280,7 @@ $student_name = $_SESSION['student_name'];
     </style>
 </head>
 <body>
-    <div class="container-fluid">
+<div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 sidebar">
@@ -350,21 +350,21 @@ $student_name = $_SESSION['student_name'];
                     <div class="col-md-4">
                         <div class="stats-card bg-primary bg-opacity-10">
                             <i class="bi bi-briefcase-fill stats-icon"></i>
-                            <div class="stats-number text-primary"><?php echo $stats['available_positions']; ?></div>
+                            <div class="stats-number text-primary">25</div>
                             <div>Available Positions</div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="stats-card bg-success bg-opacity-10">
                             <i class="bi bi-file-earmark-text-fill stats-icon"></i>
-                            <div class="stats-number text-success"><?php echo $stats['active_applications']; ?></div>
+                            <div class="stats-number text-success">5</div>
                             <div>Active Applications</div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="stats-card bg-info bg-opacity-10">
                             <i class="bi bi-building-fill stats-icon"></i>
-                            <div class="stats-number text-info"><?php echo $stats['partner_companies']; ?></div>
+                            <div class="stats-number text-info">12</div>
                             <div>Partner Companies</div>
                         </div>
                     </div>
@@ -377,33 +377,42 @@ $student_name = $_SESSION['student_name'];
                         <h4 class="mb-0">Featured Opportunities</h4>
                     </div>
                     <div class="row">
-                        <?php foreach ($featured_jobs as $job): ?>
-                            <div class="col-md-6">
-                                <div class="job-card">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <img src="<?php echo htmlspecialchars($job['logo_path']); ?>" 
-                                             alt="<?php echo htmlspecialchars($job['company_name']); ?> Logo" 
-                                             class="company-logo me-3">
-                                        <div>
-                                            <h5 class="mb-1"><?php echo htmlspecialchars($job['title']); ?></h5>
-                                            <p class="mb-0 text-muted"><?php echo htmlspecialchars($job['company_name']); ?></p>
-                                        </div>
+                        <div class="col-md-6">
+                            <div class="job-card">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="https://logo.clearbit.com/accenture.com" alt="Accenture Logo" class="company-logo me-3">
+                                    <div>
+                                        <h5 class="mb-1">Web Developer Intern</h5>
+                                        <p class="mb-0 text-muted">Accenture Philippines</p>
                                     </div>
-                                    <div class="mb-3">
-                                        <?php 
-                                        $tags = explode(',', $job['tags']);
-                                        foreach ($tags as $tag): ?>
-                                            <span class="badge bg-primary"><?php echo htmlspecialchars(trim($tag)); ?></span>
-                                        <?php endforeach; ?>
-                                        <span class="badge <?php echo $job['location'] == 'Remote' ? 'bg-secondary' : 'bg-success'; ?>">
-                                            <?php echo htmlspecialchars($job['location']); ?>
-                                        </span>
-                                    </div>
-                                    <p class="small mb-3"><?php echo htmlspecialchars(substr($job['description'], 0, 100)) . '...'; ?></p>
-                                    <a href="job_listings.php" class="btn btn-outline-primary btn-sm">Apply Now</a>
                                 </div>
+                                <div class="mb-3">
+                                    <span class="badge bg-primary">Web Development</span>
+                                    <span class="badge bg-secondary">Remote</span>
+                                    <span class="badge bg-info">PHP</span>
+                                </div>
+                                <p class="small mb-3">Looking for passionate web developer interns to join our dynamic team...</p>
+                                <button class="btn btn-outline-primary btn-sm">Apply Now</button>
                             </div>
-                        <?php endforeach; ?>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="job-card">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="https://logo.clearbit.com/ibm.com" alt="IBM Logo" class="company-logo me-3">
+                                    <div>
+                                        <h5 class="mb-1">Software QA Intern</h5>
+                                        <p class="mb-0 text-muted">IBM Philippines</p>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge bg-primary">Quality Assurance</span>
+                                    <span class="badge bg-secondary">Hybrid</span>
+                                    <span class="badge bg-info">Testing</span>
+                                </div>
+                                <p class="small mb-3">Join our QA team and gain hands-on experience in software testing...</p>
+                                <button class="btn btn-outline-primary btn-sm">Apply Now</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -413,55 +422,35 @@ $student_name = $_SESSION['student_name'];
                         <i class="bi bi-clock-history"></i>
                         <h4 class="mb-0">Recent Applications</h4>
                     </div>
-                    <?php if (empty($recent_applications)): ?>
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> You haven't applied to any positions yet. 
-                            <a href="job_listings.php" class="alert-link">Browse available opportunities</a>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Company</th>
-                                        <th>Position</th>
-                                        <th>Date Applied</th>
-                                        <th>Status</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($recent_applications as $app): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($app['company_name']); ?></td>
-                                            <td><?php echo htmlspecialchars($app['title']); ?></td>
-                                            <td><?php echo date('M j, Y', strtotime($app['created_at'])); ?></td>
-                                            <td>
-                                                <?php 
-                                                $status_class = '';
-                                                switch($app['status']) {
-                                                    case 'pending': $status_class = 'bg-warning'; break;
-                                                    case 'interview': $status_class = 'bg-primary'; break;
-                                                    case 'accepted': $status_class = 'bg-success'; break;
-                                                    case 'rejected': $status_class = 'bg-danger'; break;
-                                                    default: $status_class = 'bg-secondary';
-                                                }
-                                                ?>
-                                                <span class="badge <?php echo $status_class; ?>">
-                                                    <?php echo ucfirst($app['status']); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="applications.php" class="btn btn-sm btn-outline-primary">
-                                                    View Details
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Position</th>
+                                    <th>Date Applied</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Google Philippines</td>
+                                    <td>Frontend Developer Intern</td>
+                                    <td>Jan 4, 2024</td>
+                                    <td><span class="badge bg-warning">Pending</span></td>
+                                    <td><button class="btn btn-sm btn-outline-primary">View Details</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Microsoft Philippines</td>
+                                    <td>Software Engineer Intern</td>
+                                    <td>Jan 2, 2024</td>
+                                    <td><span class="badge bg-success">Interview Scheduled</span></td>
+                                    <td><button class="btn btn-sm btn-outline-primary">View Details</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

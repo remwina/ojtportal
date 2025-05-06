@@ -22,7 +22,7 @@ class SQL_Operations {
 
     public function authenticate($email) {
         $conn = $this->getConnection();
-        $sql = "SELECT u.id, u.srcode, u.email, u.password, u.usertype, u.status 
+        $sql = "SELECT u.id, u.srcode, u.firstname, u.lastname, u.email, u.password, u.usertype, u.status 
                 FROM users u WHERE u.email = ? AND u.status = 'active' LIMIT 1";
 
         $stmt = $conn->prepare($sql);
