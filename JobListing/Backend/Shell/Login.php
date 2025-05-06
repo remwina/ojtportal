@@ -51,11 +51,15 @@ class Login {
             $_SESSION['srcode'] = $user['srcode'];
             $_SESSION['student_name'] = $user['firstname'] . ' ' . $user['lastname'];  // Adding full name to session
             
+            $redirectUrl = '../Dashboard/dashboard.php';
+            if ($user['usertype'] === 'admin') {
+                $redirectUrl = '../Admin/Dashboard.php';
+            }
             return [
                 'success' => true,
                 'message' => 'Login successful',
                 'usertype' => $user['usertype'],
-                'redirect' => '../Dashboard/dashboard.php'  // Adding redirect URL
+                'redirect' => $redirectUrl
             ];
             
         } catch (Exception $e) {

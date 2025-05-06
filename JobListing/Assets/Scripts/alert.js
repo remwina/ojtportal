@@ -98,8 +98,13 @@ document.addEventListener("DOMContentLoaded", async function () {
                     });
 
                     const action = formData.get('action');
+                    const usertype = formData.get('usertype');
                     if (action === 'register') {
-                        window.location.href = 'login.html';
+                        if (usertype === 'admin') {
+                            window.location.href = 'Admin/Login.php';
+                        } else {
+                            window.location.href = 'login.html';
+                        }
                     } else if (data.redirect) {
                         window.location.href = data.redirect;
                     }

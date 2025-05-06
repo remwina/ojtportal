@@ -5,7 +5,7 @@ class DatabaseConfig {
 
     private function __construct() {
         $this->config = [
-            'host' => 'localhost',
+            'host' => 'localhost:3307',
             'username' => 'root',
             'password' => '',
             'dbname' => 'joblisting'

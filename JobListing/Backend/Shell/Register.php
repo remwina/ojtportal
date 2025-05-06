@@ -24,7 +24,7 @@ class UserReg {
         $this->validator->isValidEmail($email);
         $this->validator->isValidSRCode($srcode);
         $this->validator->isValidPassword($password, $conpass);
-        $this->validator->isValidUserInfo($firstname, $lastname, $course_id, $section);
+        $this->validator->isValidUserInfo($firstname, $lastname, $course_id, $section, $usertype);
 
         $validationResult = $this->validator->getErrors();
         if (!$validationResult['success']) {

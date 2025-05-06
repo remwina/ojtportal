@@ -103,7 +103,7 @@ class Validators {
         return empty($this->errors);
     }
 
-    public function isValidUserInfo($firstname, $lastname, $course_id, $section) {
+    public function isValidUserInfo($firstname, $lastname, $course_id, $section, $usertype = 'user') {
         $this->errors = [];
         
         if (empty($firstname)) {
@@ -118,16 +118,18 @@ class Validators {
             $this->errors[] = ["field" => "lastname", "message" => "Last name is too long (max 50 characters)"];
         }
 
-        if (empty($course_id)) {
-            $this->errors[] = ["field" => "course", "message" => "Please select a course"];
-        } elseif (!is_numeric($course_id)) {
-            $this->errors[] = ["field" => "course", "message" => "Invalid course selection"];
-        }
+        if (strtolower($usertype) !== 'admin') {
+            if (empty($course_id)) {
+                $this->errors[] = ["field" => "course", "message" => "Please select a course"];
+            } elseif (!is_numeric($course_id)) {
+                $this->errors[] = ["field" => "course", "message" => "Invalid course selection"];
+            }
 
-        if (empty($section)) {
-            $this->errors[] = ["field" => "section", "message" => "Section is required"];
-        } elseif (!preg_match(DIGIT_FORMAT, $section)) {
-            $this->errors[] = ["field" => "section", "message" => "Section must be a number"];
+            if (empty($section)) {
+                $this->errors[] = ["field" => "section", "message" => "Section is required"];
+            } elseif (!preg_match(DIGIT_FORMAT, $section)) {
+                $this->errors[] = ["field" => "section", "message" => "Section must be a number"];
+            }
         }
 
         $this->addToCollectedErrors();

@@ -55,3 +55,27 @@
 [06-May-2025 06:53:29 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
 [06-May-2025 07:17:37 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
 [06-May-2025 07:17:37 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 12:42:58 Europe/Berlin] Login error: PROCEDURE joblisting.sp_authenticate_user does not exist
+[06-May-2025 12:49:48 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 12:49:48 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 13:15:15 Europe/Berlin] PHP Warning:  Uncaught mysqli_sql_exception: MySQL server has gone away in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Shell\Register.php:86
+Stack trace:
+#0 C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Shell\Register.php(86): mysqli_stmt->execute()
+#1 C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Shell\Register.php(52): UserReg->insertUser('admin', '01-00001', '01-00001@g.bats...', 'Admin@123', 'Ako Si', 'Bakal', '1', '4201')
+#2 C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Core\MAIN.php(85): UserReg->registerUser('admin', '01-00001', '01-00001@g.bats...', 'Admin@123', 'Admin@123', 'Ako Si', 'Bakal', '1', '4201')
+#3 {main}
+  thrown in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Shell\Register.php on line 86
+[06-May-2025 13:15:15 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Shell\Register.php on line 95
+[06-May-2025 13:15:15 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Core\MAIN.php on line 17
+[06-May-2025 13:15:15 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Core\MAIN.php on line 17
+[06-May-2025 13:15:15 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Core\MAIN.php on line 17
+[06-May-2025 13:15:15 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Core\MAIN.php on line 17
+[06-May-2025 13:15:15 Europe/Berlin] PHP Fatal error:  Maximum execution time of 120 seconds exceeded in C:\xampp\htdocs\FinalAdbms\JobListing\Backend\Core\MAIN.php on line 17
+[06-May-2025 13:15:19 Europe/Berlin] Invalid security token
+[06-May-2025 14:11:16 Europe/Berlin] Call to private SQL_Operations::__construct() from scope Login
+[06-May-2025 14:11:21 Europe/Berlin] Call to private SQL_Operations::__construct() from scope Login
+[06-May-2025 14:12:08 Europe/Berlin] Call to private SQL_Operations::__construct() from scope Login
+[06-May-2025 14:12:14 Europe/Berlin] Call to private SQL_Operations::__construct() from scope Login
+[06-May-2025 14:12:29 Europe/Berlin] Call to private SQL_Operations::__construct() from scope Login
+[06-May-2025 14:12:54 Europe/Berlin] Call to private SQL_Operations::__construct() from scope Login
+[06-May-2025 14:12:58 Europe/Berlin] Call to private SQL_Operations::__construct() from global scope
