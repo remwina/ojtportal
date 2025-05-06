@@ -1,0 +1,135 @@
+[27-Apr-2025 08:55:04 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 08:55:04 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 08:55:04 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[27-Apr-2025 08:55:04 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[27-Apr-2025 08:55:46 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 08:55:46 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 08:55:46 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[27-Apr-2025 08:55:46 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[27-Apr-2025 08:56:18 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 08:56:18 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 08:56:18 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[27-Apr-2025 08:56:18 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[27-Apr-2025 09:06:46 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:06:46 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:06:46 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[27-Apr-2025 09:06:46 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[27-Apr-2025 09:07:10 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:07:10 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:07:10 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[27-Apr-2025 09:07:10 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[27-Apr-2025 09:08:15 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:08:15 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:08:15 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[27-Apr-2025 09:08:15 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[27-Apr-2025 09:10:22 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:10:22 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[27-Apr-2025 09:10:22 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[27-Apr-2025 09:10:22 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[04-May-2025 03:14:47 Europe/Berlin] PHP Warning:  mysqli::__construct(): (HY000/1045): Access denied for user 'root'@'localhost' (using password: YES) in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Core\Config\DataManagement\DB_Connect.php on line 14
+[04-May-2025 03:15:10 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[04-May-2025 03:15:10 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 50
+[04-May-2025 03:15:10 Europe/Berlin] PHP Warning:  Undefined array key "course_id" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[04-May-2025 03:15:10 Europe/Berlin] PHP Warning:  Undefined array key "section" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 53
+[04-May-2025 03:55:05 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[04-May-2025 03:55:05 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[04-May-2025 03:58:39 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[04-May-2025 03:58:39 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[04-May-2025 04:02:16 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[04-May-2025 04:02:16 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:02:39 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:02:39 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:05:38 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:05:38 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:05:40 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:05:40 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:19:46 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:19:46 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:31:15 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:31:15 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:31:28 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:31:28 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:52:33 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:52:33 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:53:29 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 06:53:29 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 07:17:37 Europe/Berlin] PHP Warning:  Undefined array key "firstname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 07:17:37 Europe/Berlin] PHP Warning:  Undefined array key "lastname" in C:\xampp2\htdocs\ojtportal-Lourence\JobListing\Backend\Shell\Login.php on line 52
+[06-May-2025 18:27:48 Europe/Berlin] PHP Warning:  mail(): Failed to connect to mailserver at &quot;localhost&quot; port 25, verify your &quot;SMTP&quot; and &quot;smtp_port&quot; setting in php.ini or use ini_set() in C:\xampp\htdocs\ojtportal-Austria\JobListing\Backend\Shell\PasswordReset.php on line 63
+[06-May-2025 18:28:50 Europe/Berlin] PHP Warning:  mail(): Failed to connect to mailserver at &quot;localhost&quot; port 25, verify your &quot;SMTP&quot; and &quot;smtp_port&quot; setting in php.ini or use ini_set() in C:\xampp\htdocs\ojtportal-Austria\JobListing\Backend\Shell\PasswordReset.php on line 63
+[06-May-2025 18:30:18 Europe/Berlin] PHP Warning:  mail(): Failed to connect to mailserver at &quot;localhost&quot; port 25, verify your &quot;SMTP&quot; and &quot;smtp_port&quot; setting in php.ini or use ini_set() in C:\xampp\htdocs\ojtportal-Austria\JobListing\Backend\Shell\PasswordReset.php on line 63
+[06-May-2025 18:37:31 Europe/Berlin] PHP Warning:  stream_socket_enable_crypto(): SSL operation failed with code 1. OpenSSL Error messages:
+error:0A00010B:SSL routines::wrong version number in C:\xampp\htdocs\ojtportal-Austria\JobListing\Backend\Shell\PasswordReset.php on line 45
+[06-May-2025 18:45:18 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 18:49:22 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 18:55:19 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 18:56:21 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:00:51 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:06:27 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:10:27 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:11:38 Europe/Berlin] Invalid security token
+[06-May-2025 19:11:38 Europe/Berlin] Password reset error: Unknown column 'pr.used' in 'where clause'
+[06-May-2025 19:12:44 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:12:50 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:13:27 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:13:43 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:13:53 Europe/Berlin] Password reset error: Unknown column 'pr.used' in 'where clause'
+[06-May-2025 19:14:12 Europe/Berlin] Password reset error: Unknown column 'pr.used' in 'where clause'
+[06-May-2025 19:18:38 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:18:58 Europe/Berlin] Invalid security token
+[06-May-2025 19:19:09 Europe/Berlin] Invalid security token
+[06-May-2025 19:21:21 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:21:40 Europe/Berlin] Attempting password reset with token: 7fa5339f17...
+[06-May-2025 19:21:40 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 19:21:40 Europe/Berlin] Invalid security token
+[06-May-2025 19:21:44 Europe/Berlin] Invalid security token
+[06-May-2025 19:21:44 Europe/Berlin] Attempting password reset with token: 7fa5339f17...
+[06-May-2025 19:21:44 Europe/Berlin] Token already used
+[06-May-2025 19:21:48 Europe/Berlin] Invalid security token
+[06-May-2025 19:21:48 Europe/Berlin] Attempting password reset with token: 7fa5339f17...
+[06-May-2025 19:21:48 Europe/Berlin] Token already used
+[06-May-2025 19:23:08 Europe/Berlin] Invalid security token
+[06-May-2025 19:23:08 Europe/Berlin] Attempting password reset with token: 7fa5339f17...
+[06-May-2025 19:23:08 Europe/Berlin] Token already used
+[06-May-2025 19:28:25 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:29:13 Europe/Berlin] Attempting password reset with token: 8b13de8cb1...
+[06-May-2025 19:29:13 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 19:29:13 Europe/Berlin] Invalid security token
+[06-May-2025 19:31:15 Europe/Berlin] Invalid security token
+[06-May-2025 19:31:15 Europe/Berlin] Attempting password reset with token: 8b13de8cb1...
+[06-May-2025 19:31:15 Europe/Berlin] Token already used
+[06-May-2025 19:31:26 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 19:31:40 Europe/Berlin] Attempting password reset with token: a9aef916dd...
+[06-May-2025 19:31:40 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 19:31:40 Europe/Berlin] Attempting password reset with token: a9aef916dd...
+[06-May-2025 19:31:40 Europe/Berlin] Token already used
+[06-May-2025 20:33:05 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 20:33:53 Europe/Berlin] Invalid security token
+[06-May-2025 20:33:53 Europe/Berlin] Attempting password reset with token: af99636002...
+[06-May-2025 20:33:53 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 20:33:59 Europe/Berlin] Invalid security token
+[06-May-2025 20:33:59 Europe/Berlin] Attempting password reset with token: af99636002...
+[06-May-2025 20:33:59 Europe/Berlin] Token already used
+[06-May-2025 20:44:23 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 20:44:49 Europe/Berlin] Invalid security token
+[06-May-2025 20:44:49 Europe/Berlin] Attempting password reset with token: b0d67801dc...
+[06-May-2025 20:44:49 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 20:44:52 Europe/Berlin] Invalid security token
+[06-May-2025 20:44:52 Europe/Berlin] Attempting password reset with token: b0d67801dc...
+[06-May-2025 20:44:52 Europe/Berlin] Token already used
+[06-May-2025 20:44:54 Europe/Berlin] Invalid security token
+[06-May-2025 20:44:54 Europe/Berlin] Attempting password reset with token: b0d67801dc...
+[06-May-2025 20:44:54 Europe/Berlin] Token already used
+[06-May-2025 20:45:01 Europe/Berlin] Invalid security token
+[06-May-2025 20:45:01 Europe/Berlin] Attempting password reset with token: b0d67801dc...
+[06-May-2025 20:45:01 Europe/Berlin] Token already used
+[06-May-2025 20:50:56 Europe/Berlin] Invalid security token
+[06-May-2025 20:50:56 Europe/Berlin] Attempting password reset with token: b0d67801dc...
+[06-May-2025 20:50:56 Europe/Berlin] Token already used
+[06-May-2025 20:50:59 Europe/Berlin] Invalid security token
+[06-May-2025 20:50:59 Europe/Berlin] Attempting password reset with token: b0d67801dc...
+[06-May-2025 20:50:59 Europe/Berlin] Token already used
+[06-May-2025 20:51:17 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 20:51:33 Europe/Berlin] Invalid security token
+[06-May-2025 20:51:33 Europe/Berlin] Attempting password reset with token: 38cfb09f4f...
+[06-May-2025 20:51:33 Europe/Berlin] Password reset successful for user ID: 2
