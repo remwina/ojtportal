@@ -11,13 +11,12 @@ class PasswordReset {
     
     private function sendEmail($to, $subject, $message) {
         try {
-            $email = '23-32966@g.batstate-u.edu.ph'; // Replace with your Gmail address
+            $email = '23-32966@g.batstate-u.edu.ph'; 
             $app_password = 'zzus gtya bhdj unhi';
             
             $smtp_server = 'smtp.gmail.com';
             $smtp_port = 587;
             
-            // Create connection
             $socket_context = stream_context_create([
                 'ssl' => [
                     'verify_peer' => false,
@@ -39,33 +38,25 @@ class PasswordReset {
                 throw new Exception("Could not connect to SMTP server: $errstr ($errno)");
             }
             
-            // Set timeout
             stream_set_timeout($socket, 30);
             
-            // Read greeting
             $this->getResponse($socket);
             
-            // Initiate TLS connection
             $this->sendCommand($socket, "EHLO " . $_SERVER['SERVER_NAME']);
             $this->sendCommand($socket, "STARTTLS");
             
-            // Enable crypto
             stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
             
-            // Re-initialize SMTP connection over TLS
             $this->sendCommand($socket, "EHLO " . $_SERVER['SERVER_NAME']);
             
-            // Authenticate
             $this->sendCommand($socket, "AUTH LOGIN");
             $this->sendCommand($socket, base64_encode($email));
             $this->sendCommand($socket, base64_encode($app_password));
             
-            // Send email
             $this->sendCommand($socket, "MAIL FROM:<{$email}>");
             $this->sendCommand($socket, "RCPT TO:<{$to}>");
             $this->sendCommand($socket, "DATA");
             
-            // Send headers and content
             $headers = [
                 "MIME-Version: 1.0",
                 "Content-type: text/html; charset=UTF-8",
@@ -78,7 +69,6 @@ class PasswordReset {
             $email_content = implode("\r\n", $headers) . "\r\n\r\n" . $message . "\r\n.";
             $this->sendCommand($socket, $email_content);
             
-            // Close connection
             $this->sendCommand($socket, "QUIT");
             fclose($socket);
             
@@ -118,7 +108,6 @@ class PasswordReset {
                 ];
             }
             
-            // Generate reset token
             $token = bin2hex(random_bytes(32));
             $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
             $user_id = $result->fetch_assoc()['id'];
@@ -129,7 +118,6 @@ class PasswordReset {
             $stmt->execute();
             
             if ($stmt->affected_rows > 0) {
-                // Send reset email
                 $resetLink = "http://{$_SERVER['HTTP_HOST']}/ojtportal-austria/JobListing/Frontend/reset-password.html?token=" . $token;
                 $logoUrl = "http://{$_SERVER['HTTP_HOST']}/ojtportal-austria/JobListing/Assets/Images/BatStateU-NEU-Logo.png";
                 $to = $email;
@@ -344,11 +332,7 @@ class PasswordReset {
                 WHERE pr.token = ?
             ");
             $stmt->bind_param("s", $token);
-            
-            if (!$stmt->execute()) {
-                throw new Exception("Database error while verifying token");
-            }
-            
+            $stmt->execute();
             $result = $stmt->get_result();
             
             if ($result->num_rows === 0) {
@@ -389,21 +373,19 @@ class PasswordReset {
                 $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
                 $stmt = $this->conn->prepare("UPDATE users SET password = ? WHERE id = ?");
                 $stmt->bind_param("si", $hashedPassword, $user_id);
-                
-                if (!$stmt->execute()) {
-                    throw new Exception("Failed to update password: " . $stmt->error);
-                }
+                $stmt->execute();
                 
                 if ($stmt->affected_rows <= 0) {
-                    throw new Exception("No changes made to password");
+                    throw new Exception("Failed to update password");
                 }
                 
                 // Mark token as used
                 $stmt = $this->conn->prepare("UPDATE password_resets SET used = 1 WHERE token = ?");
                 $stmt->bind_param("s", $token);
+                $stmt->execute();
                 
-                if (!$stmt->execute()) {
-                    throw new Exception("Failed to mark token as used: " . $stmt->error);
+                if ($stmt->affected_rows <= 0) {
+                    throw new Exception("Failed to mark token as used");
                 }
                 
                 // Commit transaction
@@ -418,7 +400,6 @@ class PasswordReset {
             } catch (Exception $e) {
                 // Rollback transaction on error
                 $this->conn->rollback();
-                error_log("Transaction error during password reset: " . $e->getMessage());
                 throw $e;
             }
             
@@ -426,7 +407,7 @@ class PasswordReset {
             error_log("Password reset error: " . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'An error occurred while resetting your password: ' . $e->getMessage()
+                'message' => 'An error occurred while resetting your password. Please try again.'
             ];
         }
     }

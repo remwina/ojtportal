@@ -137,3 +137,44 @@ error:0A00010B:SSL routines::wrong version number in C:\xampp\htdocs\ojtportal-A
 [06-May-2025 21:06:28 Europe/Berlin] Attempting password reset with token: d8ad77e6ab...
 [06-May-2025 21:06:28 Europe/Berlin] Password reset successful for user ID: 2
 [06-May-2025 21:06:28 Europe/Berlin] Invalid security token
+[06-May-2025 21:27:48 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 21:28:15 Europe/Berlin] Attempting password reset with token: 2e36a362ac...
+[06-May-2025 21:28:15 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 21:34:16 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 21:34:39 Europe/Berlin] Attempting password reset with token: b8a5b9b333...
+[06-May-2025 21:34:40 Europe/Berlin] Password reset successful for user ID: 2
+[06-May-2025 21:34:40 Europe/Berlin] Invalid security token
+[06-May-2025 21:38:49 Europe/Berlin] Invalid security token
+[06-May-2025 21:38:57 Europe/Berlin] Invalid security token
+[06-May-2025 21:38:59 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 21:39:00 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 21:39:04 Europe/Berlin] Invalid security token
+[06-May-2025 21:39:10 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 21:41:21 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[06-May-2025 21:46:00 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:43:20 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:43:24 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:46:37 Europe/Berlin] Invalid security token
+[07-May-2025 03:46:41 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:47:17 Europe/Berlin] Invalid security token
+[07-May-2025 03:47:20 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:47:43 Europe/Berlin] Invalid security token
+[07-May-2025 03:47:47 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:48:01 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:54:27 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:54:27 Europe/Berlin] Invalid security token
+[07-May-2025 03:54:42 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 03:54:42 Europe/Berlin] Invalid security token
+[07-May-2025 03:55:37 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:00:30 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:01:02 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:03:47 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:03:56 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:05:56 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:08:09 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:08:36 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:09:44 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:16:01 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:18:29 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:24:06 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
+[07-May-2025 04:26:53 Europe/Berlin] Email sending attempt to 23-32966@g.batstate-u.edu.ph: Success
