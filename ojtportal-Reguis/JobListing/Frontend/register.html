@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Placement and Listing Management - BatStateU</title>
+    <link rel="stylesheet" href="../Assets/Styles/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <main class="hero-section">
+        <div class="left-section">
+            <div class="animated-bg"></div>
+            <div class="content-wrapper">
+                <div class="school-header">
+                    <img src="../Assets/Images/BatStateU-NEU-Logo.png" alt="BatStateU Logo">
+                    <div class="school-info">
+                        <div class="school-name">Batangas State University</div>
+                        <div class="campus-name">The NEU - Lipa Campus</div>
+                    </div>
+                </div>
+
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1>Join Our Community</h1>
+                        <p class="hero-subtitle">Start your journey to success today!</p>
+                    </div>
+                    <div class="floating-elements">
+                        <div class="floating-icon" data-delay="0">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="floating-icon" data-delay="1">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="floating-icon" data-delay="2">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="floating-icon" data-delay="3">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="floating-elements right-icons">
+                <div class="floating-icon red-icon" data-delay="0">
+                    <i class="fas fa-id-card"></i>
+                </div>
+                <div class="floating-icon red-icon" data-delay="1">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="floating-icon red-icon" data-delay="2">
+                    <i class="fas fa-lock"></i>
+                </div>
+            </div>
+            <div class="auth-container">
+                <h2>Create Account</h2>
+                <p class="auth-subtitle">Fill in your details to get started</p>
+
+                <form id="registerForm" class="auth-form">
+                    <input type="hidden" name="action" value="register">
+                    <input type="hidden" name="csrf_token" id="csrf_token">
+
+                    <div class="form-group">
+                        <label for="usertype">User Type</label>
+                        <select id="usertype" name="usertype">
+                            <option value="none">Select User Type</option>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <div id="usertype-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="firstname">First Name</label>
+                        <input type="text" id="firstname" name="firstname" placeholder="Enter your first name">
+                        <div id="firstname-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lastname">Last Name</label>
+                        <input type="text" id="lastname" name="lastname" placeholder="Enter your last name">
+                        <div id="lastname-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <select id="department" name="department">
+                            <option value="">Select Department</option>
+                        </select>
+                        <div id="department-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course">Course</label>
+                        <select id="course" name="course" disabled>
+                            <option value="">Select Course</option>
+                        </select>
+                        <div id="course-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="section">Section</label>
+                        <input type="text" id="section" name="section" placeholder="Enter your section" maxlength="4">
+                        <div id="section-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="srcode">SR Code</label>
+                        <input type="text" id="srcode" name="srcode" placeholder="Enter SR Code (XX-XXXXX)" maxlength="8">
+                        <div id="srcode-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="text" id="email" name="email" placeholder="Enter your email" autocomplete="email">
+                        <div id="email-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="new-password">
+                        <div id="password-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" autocomplete="new-password">
+                        <div id="confirm_password-error" class="error-message"></div>
+                    </div>
+
+                    <button type="submit" class="auth-btn btn-base primary">
+                        <i class="fas fa-user-plus"></i>
+                        <span class="btn-text">Create Account</span>
+                        <span class="btn-loader">
+                            <svg class="spinner" viewBox="0 0 50 50">
+                                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                            </svg>
+                        </span>
+                    </button>
+                </form>
+
+                <div class="sign-in-link">
+                    <p>Already registered? <a href="login.html" onclick="CSRFManager.removeToken()">Sign in here</a></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../Assets/Scripts/loading.js"></script>
+    <script src="../Assets/Scripts/csrf.js"></script>
+    <script src="../Assets/Scripts/alert.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await CSRFManager.init();
+            CSRFManager.updateFormToken(document.getElementById('registerForm'));
+
+            const departmentSelect = document.getElementById('department');
+            const courseSelect = document.getElementById('course');
+
+            // Fetch departments
+            try {
+                const response = await fetch('../Backend/Core/MAIN.php?action=getDepartments');
+                const data = await response.json();
+                if (data.success && data.departments) {
+                    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                } else {
+                    throw new Error(data.message || 'Failed to load departments');
+                }
+            } catch (error) {
+                console.error('Error loading departments:', error);
+                departmentSelect.innerHTML = '<option value="">Failed to load departments</option>';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load departments. Please refresh the page.',
+                });
+            }
+
+            // Handle department change
+            departmentSelect.addEventListener('change', async function() {
+                courseSelect.disabled = true;
+                courseSelect.innerHTML = '<option value="">Select Course</option>';
+                
+                if (this.value) {
+                    try {
+                        const response = await fetch(`../Backend/Core/MAIN.php?action=getCoursesByDepartment&department_id=${this.value}`);
+                        const data = await response.json();
+                        if (data.success && data.courses) {
+                            data.courses.forEach(course => {
+                                const option = document.createElement('option');
+                                option.value = course.id;
+                                option.textContent = course.name;
+                                courseSelect.appendChild(option);
+                            });
+                            courseSelect.disabled = false;
+                        } else {
+                            throw new Error(data.message || 'Failed to load courses');
+                        }
+                    } catch (error) {
+                        console.error('Error loading courses:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to load courses. Please try again.',
+                        });
+                    }
+                }
+            });
+
+            // Form submission
+            document.getElementById('registerForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Clear previous errors
+                document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+                
+                // Basic validation
+                const requiredFields = ['usertype', 'firstname', 'lastname', 'department', 'course', 'section', 'srcode', 'email', 'password', 'confirm_password'];
+                let hasErrors = false;
+                
+                requiredFields.forEach(field => {
+                    const input = document.getElementById(field);
+                    if (!input.value.trim()) {
+                        document.getElementById(field + '-error').textContent = 'This field is required';
+                        hasErrors = true;
+                    }
+                });
+                
+                if (hasErrors) return;
+
+                try {
+                    const formData = new FormData(this);
+                    const data = await CSRFManager.fetchWithToken('../Backend/Core/MAIN.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (data.success) {
+                        // Update CSRF token if provided
+                        if (data.csrf_token) {
+                            CSRFManager.setToken(data.csrf_token);
+                        }
+                        
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Registration successful! Please login to continue.',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+                        
+                        window.location.href = 'login.html';
+                    } else {
+                        // Handle validation errors
+                        if (data.errors) {
+                            data.errors.forEach(error => {
+                                const errorElement = document.getElementById(error.field + '-error');
+                                if (errorElement) {
+                                    errorElement.textContent = error.message;
+                                }
+                            });
+                        } else {
+                            throw new Error(data.message || 'Registration failed');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Registration Failed',
+                        text: error.message || 'An error occurred during registration'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

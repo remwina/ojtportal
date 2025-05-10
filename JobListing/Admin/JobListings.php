@@ -25,19 +25,20 @@ class JobListingsManager {
     }
 
     public function getAllJobListings() {
-        $query = "SELECT jl.*, c.name as company_name 
-                 FROM job_listings jl 
-                 LEFT JOIN companies c ON jl.company_id = c.id 
-                 ORDER BY jl.created_at DESC";
-        $result = $this->conn->query($query);
-        if (!$result) {
-            throw new Exception("Error fetching job listings: " . $this->conn->error);
+        // Use stored procedure for getting job listings
+        $stmt = $this->conn->prepare("CALL sp_get_job_listings()");
+        if (!$stmt) {
+            throw new Exception("Error preparing statement: " . $this->conn->error);
         }
-        return $result->fetch_all(MYSQLI_ASSOC);
+        if (!$stmt->execute()) {
+            throw new Exception("Error fetching job listings: " . $stmt->error);
+        }
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
     public function getJobById($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM job_listings WHERE id = ?");
+        // Use stored procedure for getting job details
+        $stmt = $this->conn->prepare("CALL sp_get_job_details(?)");
         if (!$stmt) {
             throw new Exception("Error preparing statement: " . $this->conn->error);
         }
@@ -45,69 +46,55 @@ class JobListingsManager {
         if (!$stmt->execute()) {
             throw new Exception("Error fetching job: " . $stmt->error);
         }
-        $result = $stmt->get_result();
-        return $result->fetch_assoc();
-    }    public function addJobListing($data) {
-        $stmt = $this->conn->prepare("INSERT INTO job_listings (title, company_id, description, work_mode, job_type, slots, salary_range, requirements, responsibilities, qualifications, benefits, status, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    public function addJobListing($data) {
+        // Use stored procedure for adding a job
+        $stmt = $this->conn->prepare("CALL sp_add_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             throw new Exception("Error preparing statement: " . $this->conn->error);
         }
-        $stmt->bind_param("sisssisssssss", 
-            $data['title'],
+
+        $stmt->bind_param("isssssiss", 
             $data['company_id'],
+            $data['title'],
             $data['description'],
+            $data['requirements'],
             $data['work_mode'],
             $data['job_type'],
             $data['slots'],
-            $data['salary_range'],
-            $data['requirements'],
-            $data['responsibilities'],
-            $data['qualifications'],
-            $data['benefits'],
             $data['status'],
             $data['expires_at']
         );
+
         if (!$stmt->execute()) {
             throw new Exception("Error adding job listing: " . $stmt->error);
         }
-        return $stmt->insert_id;
-    }    public function updateJobListing($data) {
-        $stmt = $this->conn->prepare("UPDATE job_listings SET 
-            title = ?,
-            company_id = ?,
-            description = ?,
-            work_mode = ?,
-            job_type = ?,
-            slots = ?,
-            salary_range = ?,
-            requirements = ?,
-            responsibilities = ?,
-            qualifications = ?,
-            benefits = ?,
-            status = ?,
-            expires_at = ?
-            WHERE id = ?");
-        
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        return $row['job_id'];
+    }
+
+    public function updateJobListing($data) {
+        // Use stored procedure for updating a job
+        $stmt = $this->conn->prepare("CALL sp_update_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             throw new Exception("Error preparing statement: " . $this->conn->error);
         }
-        
-        $stmt->bind_param("sisssisssssssi",            $data['title'],
-            $data['company_id'],
+
+        $stmt->bind_param("isssssiss",
+            $data['id'],
+            $data['title'],
             $data['description'],
+            $data['requirements'],
             $data['work_mode'],
             $data['job_type'],
             $data['slots'],
-            $data['salary_range'],
-            $data['requirements'],
-            $data['responsibilities'],
-            $data['qualifications'],
-            $data['benefits'],
             $data['status'],
-            $data['expires_at'],
-            $data['id']
+            $data['expires_at']
         );
-        
+
         if (!$stmt->execute()) {
             throw new Exception("Error updating job listing: " . $stmt->error);
         }
@@ -116,7 +103,7 @@ class JobListingsManager {
 
     public function deleteJobListing($id) {
         // First check if job has any applications
-        $stmt = $this->conn->prepare("SELECT COUNT(*) as count FROM applications WHERE job_id = ?");
+        $stmt = $this->conn->prepare("SELECT COUNT(*) as count FROM job_applications WHERE job_id = ?");
         if (!$stmt) {
             throw new Exception("Error preparing statement: " . $this->conn->error);
         }
@@ -144,11 +131,15 @@ class JobListingsManager {
     }
 
     public function getAllCompanies() {
-        $result = $this->conn->query("SELECT id, name FROM companies WHERE status = 'active' ORDER BY name ASC");
-        if (!$result) {
-            throw new Exception("Error fetching companies: " . $this->conn->error);
+        // Use stored procedure to get active companies
+        $stmt = $this->conn->prepare("CALL sp_get_companies()");
+        if (!$stmt) {
+            throw new Exception("Error preparing statement: " . $this->conn->error);
         }
-        return $result->fetch_all(MYSQLI_ASSOC);
+        if (!$stmt->execute()) {
+            throw new Exception("Error fetching companies: " . $stmt->error);
+        }
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
     public function __destruct() {
@@ -171,6 +162,8 @@ $companies = $manager->getAllCompanies();
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="../Assets/Styles/admin.css" />
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -206,36 +199,17 @@ $companies = $manager->getAllCompanies();
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Search and Profile -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="search-container">
-                        <div class="search-bar">
-                            <input type="text" class="form-control" placeholder="Search job listings...">
-                            <button class="search-button">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
+                <!-- Section Header with Profile -->
+                <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-briefcase-fill me-2"></i>
+                        <h4 class="mb-0">Job Listings Management</h4>
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
                         <span class="ms-2">Admin</span>
                     </div>
-                </div>
-
-                <!-- Section Header -->
-                <div class="section-header">
-                    <i class="bi bi-briefcase-fill"></i>
-                    <h4 class="mb-0">Job Listings Management</h4>
-                </div>
-
-                <!-- Add New Job Button -->
-                <div class="mb-4">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addJobModal">
-                        <i class="bi bi-plus-circle"></i> Add New Job Listing
-                    </button>
-                </div>
-
-                <!-- Job Listings Table -->
+                </div>                <!-- Job Listings Table -->
                 <div class="table-responsive">
                     <table class="table table-hover" id="jobListingsTable">
                         <thead>
@@ -276,9 +250,18 @@ $companies = $manager->getAllCompanies();
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Add New Job Button -->
+                <div class="add-button-container">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addJobModal">
+                        <i class="bi bi-plus-circle"></i> Add New Job
+                    </button>
+                </div>
             </div>
         </div>
-    </div>    <!-- Add Job Modal -->
+    </div>
+
+    <!-- Add Job Modal -->
     <div class="modal fade" id="addJobModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -493,29 +476,40 @@ $companies = $manager->getAllCompanies();
                 </div>
             </div>
         </div>
-    </div>
+    </div>    <!-- Load scripts in correct order -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="../Assets/Scripts/csrf.js"></script>
+    <script src="../Assets/Scripts/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize DataTable
+            if ($.fn.DataTable.isDataTable('#jobListingsTable')) {
+                $('#jobListingsTable').DataTable().destroy();
+            }
+            
+            $('#jobListingsTable').DataTable({
+                pageLength: 10,
+                language: {
+                    search: "Search jobs:",
+                    lengthMenu: "_MENU_ jobs per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ jobs",
+                    infoEmpty: "No jobs found",
+                    emptyTable: "No jobs available"
+                },
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+            });
 
-    <!-- Password Change Modal -->
-    <div class="modal fade" id="changePasswordModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Change Password</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="changePasswordForm">
-                        <div class="mb-3">
-                            <label class="form-label">Current Password</label>
-                            <input type="password" class="form-control" name="current_password" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">New Password</label>
-                            <input type="password" class="form-control" name="new_password" id="newPassword" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Confirm New Password</label>
-                            <input type="password" class="form-control" id="confirmPassword" required>
+            // Initialize CSRF token management
+            await CSRFManager.init();
+        });
+    </script>
+</body>
+</html>
                         </div>
                     </form>
                 </div>
@@ -527,12 +521,32 @@ $companies = $manager->getAllCompanies();
         </div>
     </div>
 
+    <!-- Load scripts in correct order -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Destroy existing DataTable instance if it exists
+            if ($.fn.DataTable.isDataTable('#jobListingsTable')) {
+                $('#jobListingsTable').DataTable().destroy();
+            }
+            
+            // Initialize fresh DataTable instance
+            $('#jobListingsTable').DataTable({
+                order: [[5, 'desc']], // Sort by posted date descending
+                pageLength: 10,
+                language: {
+                    search: "Filter records:"
+                }
+            });
+
+            // Initialize CSRF token management
+            await CSRFManager.init();
+        });
+    </script>
 </body>
 </html>

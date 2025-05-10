@@ -1,0 +1,73 @@
+
+[10-May-2025 05:44:24 Europe/Berlin] Invalid security token
+[10-May-2025 05:44:24 Europe/Berlin] Company ID is required
+[10-May-2025 05:44:24 Europe/Berlin] Company ID is required
+[10-May-2025 05:49:25 Europe/Berlin] Company ID is required
+[10-May-2025 05:49:25 Europe/Berlin] Invalid security token
+[10-May-2025 05:49:25 Europe/Berlin] Company ID is required
+[10-May-2025 05:50:13 Europe/Berlin] No action specified
+[10-May-2025 05:59:42 Europe/Berlin] Company ID is required
+[10-May-2025 05:59:42 Europe/Berlin] Company ID is required
+[10-May-2025 05:59:42 Europe/Berlin] Company ID is required
+[10-May-2025 05:59:50 Europe/Berlin] Company ID is required
+[10-May-2025 05:59:50 Europe/Berlin] Company ID is required
+[10-May-2025 05:59:50 Europe/Berlin] Company ID is required
+[10-May-2025 06:08:48 Europe/Berlin] Company ID is required
+[10-May-2025 06:08:48 Europe/Berlin] Company ID is required
+[10-May-2025 06:08:48 Europe/Berlin] Company ID is required
+[10-May-2025 06:12:58 Europe/Berlin] Company ID is required
+[10-May-2025 06:12:58 Europe/Berlin] Company ID is required
+[10-May-2025 06:12:58 Europe/Berlin] Company ID is required
+[10-May-2025 06:29:05 Europe/Berlin] Company ID is required
+[10-May-2025 06:29:05 Europe/Berlin] Company ID is required
+[10-May-2025 06:36:27 Europe/Berlin] Company ID is required
+[10-May-2025 06:38:42 Europe/Berlin] Company ID is required
+[10-May-2025 06:47:14 Europe/Berlin] Invalid security token
+[10-May-2025 06:56:34 Europe/Berlin] Invalid security token
+[10-May-2025 06:57:06 Europe/Berlin] Invalid security token
+[10-May-2025 07:10:18 Europe/Berlin] Invalid security token
+[10-May-2025 07:15:25 Europe/Berlin] Invalid security token
+[10-May-2025 07:21:38 Europe/Berlin] Invalid security token
+[10-May-2025 07:27:47 Europe/Berlin] Invalid security token
+[10-May-2025 07:29:34 Europe/Berlin] Invalid security token
+[10-May-2025 07:37:53 Europe/Berlin] Validating CSRF token...
+[10-May-2025 07:37:53 Europe/Berlin] Provided token: a63e3f63f41a7598c799c5ebc1324aa7ab6c24f9a124856a6bd03ac0148c5a4f
+[10-May-2025 07:37:53 Europe/Berlin] Session token: a63e3f63f41a7598c799c5ebc1324aa7ab6c24f9a124856a6bd03ac0148c5a4f
+[10-May-2025 07:37:53 Europe/Berlin] CSRF token validated successfully
+[10-May-2025 07:41:48 Europe/Berlin] Validating CSRF token...
+[10-May-2025 07:41:48 Europe/Berlin] Provided token: a63e3f63f41a7598c799c5ebc1324aa7ab6c24f9a124856a6bd03ac0148c5a4f
+[10-May-2025 07:41:48 Europe/Berlin] Session token: a63e3f63f41a7598c799c5ebc1324aa7ab6c24f9a124856a6bd03ac0148c5a4f
+[10-May-2025 07:41:48 Europe/Berlin] CSRF token validated successfully
+[10-May-2025 07:41:50 Europe/Berlin] Validating CSRF token...
+[10-May-2025 07:41:50 Europe/Berlin] Provided token: a63e3f63f41a7598c799c5ebc1324aa7ab6c24f9a124856a6bd03ac0148c5a4f
+[10-May-2025 07:41:50 Europe/Berlin] Session token: a63e3f63f41a7598c799c5ebc1324aa7ab6c24f9a124856a6bd03ac0148c5a4f
+[10-May-2025 07:41:50 Europe/Berlin] CSRF token validated successfully
+[10-May-2025 07:41:50 Europe/Berlin] PROCEDURE joblisting.sp_admin_update_company_no_logo does not exist
+[10-May-2025 07:49:05 Europe/Berlin] Invalid security token
+[10-May-2025 07:49:25 Europe/Berlin] Invalid security token
+[10-May-2025 07:51:06 Europe/Berlin] Invalid security token
+[10-May-2025 07:55:13 Europe/Berlin] Invalid security token
+[10-May-2025 07:55:14 Europe/Berlin] Invalid security token
+[10-May-2025 08:14:26 Europe/Berlin] Invalid security token
+[10-May-2025 08:14:29 Europe/Berlin] Invalid security token
+[10-May-2025 08:16:10 Europe/Berlin] Invalid security token
+[10-May-2025 08:16:24 Europe/Berlin] Invalid security token
+[10-May-2025 08:18:25 Europe/Berlin] Invalid security token
+[10-May-2025 08:19:49 Europe/Berlin] Invalid security token
+[10-May-2025 08:21:38 Europe/Berlin] Invalid security token
+[10-May-2025 08:24:52 Europe/Berlin] Invalid security token
+[10-May-2025 08:24:56 Europe/Berlin] Invalid security token
+[10-May-2025 08:29:39 Europe/Berlin] PROCEDURE joblisting.sp_admin_update_company_no_logo does not exist
+[10-May-2025 08:35:32 Europe/Berlin] Error in company update: PROCEDURE joblisting.sp_admin_update_company_no_logo does not exist
+[10-May-2025 08:35:32 Europe/Berlin] Failed to update company: PROCEDURE joblisting.sp_admin_update_company_no_logo does not exist
+[10-May-2025 08:40:43 Europe/Berlin] Error in company update: PROCEDURE joblisting.sp_admin_update_company_no_logo does not exist
+[10-May-2025 08:40:43 Europe/Berlin] Failed to update company: PROCEDURE joblisting.sp_admin_update_company_no_logo does not exist
+[10-May-2025 09:38:39 Europe/Berlin] mysqli_stmt::bind_param(): Argument #5 cannot be passed by reference
+[10-May-2025 09:38:45 Europe/Berlin] mysqli_stmt::bind_param(): Argument #5 cannot be passed by reference
+[10-May-2025 10:14:49 Europe/Berlin] mysqli_stmt::bind_param(): Argument #5 cannot be passed by reference
+[10-May-2025 10:30:26 Europe/Berlin] The number of elements in the type definition string must match the number of bind variables
+[10-May-2025 10:30:30 Europe/Berlin] The number of elements in the type definition string must match the number of bind variables
+[10-May-2025 11:18:42 Europe/Berlin] Unknown column 'work_mode' in 'field list'
+[10-May-2025 11:36:29 Europe/Berlin] Job listing added successfully: ID 1
+[10-May-2025 12:01:33 Europe/Berlin] Job ID is required
+[10-May-2025 12:05:56 Europe/Berlin] Job listing added successfully: ID 2

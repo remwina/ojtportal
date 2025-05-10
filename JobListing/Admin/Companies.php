@@ -174,33 +174,16 @@ $companies = $manager->getAllCompanies();
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Search and Profile -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="search-container">
-                        <div class="search-bar">
-                            <input type="text" class="form-control" placeholder="Search companies...">
-                            <button class="search-button">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
+                <!-- Section Header with Profile -->
+                <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-building-fill me-2"></i>
+                        <h4 class="mb-0">Partner Companies Management</h4>
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
                         <span class="ms-2">Admin</span>
                     </div>
-                </div>
-
-                <!-- Section Header -->
-                <div class="section-header">
-                    <i class="bi bi-building-fill"></i>
-                    <h4 class="mb-0">Partner Companies Management</h4>
-                </div>
-
-                <!-- Add New Company Button -->
-                <div class="mb-4">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCompanyModal">
-                        <i class="bi bi-plus-circle"></i> Add New Company
-                    </button>
                 </div>
 
                 <!-- Companies Table -->
@@ -224,7 +207,7 @@ $companies = $manager->getAllCompanies();
                                             <img src="<?php echo htmlspecialchars('../Backend/Core/get_company_logo.php?id=' . $company['id']); ?>" 
                                                  alt="Company Logo"
                                                  class="company-logo me-2"
-                                                 style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                                 class="company-logo-small">
                                             <div>
                                                 <?php echo htmlspecialchars($company['name']); ?>
                                             </div>
@@ -257,6 +240,13 @@ $companies = $manager->getAllCompanies();
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Add New Company Button -->
+                <div class="add-button-container">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCompanyModal">
+                        <i class="bi bi-plus-circle"></i> Add New Company
+                    </button>
                 </div>
             </div>
         </div>
@@ -395,41 +385,36 @@ $companies = $manager->getAllCompanies();
 
     <!-- Load scripts in correct order -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/admin.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            // Initialize CSRF token management
-            try {
-                // Initialize CSRF first
-                await CSRFManager.init();
-                
-                // Update all forms with the token
-                CSRFManager.updateAllForms();
-
-                // Initialize company select options
-                const companySelect = document.querySelector('select[name="company_id"]');
-                if (companySelect) {
-                    const companiesData = JSON.parse('<?php echo addslashes(json_encode($companies)); ?>');
-                    companiesData.forEach(company => {
-                        const option = document.createElement('option');
-                        option.value = company.id;
-                        option.textContent = company.name;
-                        companySelect.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to initialize:', error);
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Failed to initialize the page. Please refresh and try again.',
-                    icon: 'error'
-                });
+            // Initialize DataTable
+            if ($.fn.DataTable.isDataTable('#companiesTable')) {
+                $('#companiesTable').DataTable().destroy();
             }
+            
+            $('#companiesTable').DataTable({
+                pageLength: 10,
+                language: {
+                    search: "Search companies:",
+                    lengthMenu: "_MENU_ companies per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ companies",
+                    infoEmpty: "No companies found",
+                    emptyTable: "No companies available"
+                },
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+            });
+
+            // Initialize CSRF token management
+            await CSRFManager.init();
         });
     </script>
 </body>

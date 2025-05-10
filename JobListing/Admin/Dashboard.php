@@ -22,10 +22,11 @@ class AdminDashboard {
     public function getStats() {
         $stats = [];
 
+        // Basic metrics
         $result = $this->conn->query("SELECT COUNT(*) as count FROM job_listings");
         $stats['total_jobs'] = $result->fetch_assoc()['count'];
 
-        $result = $this->conn->query("SELECT COUNT(*) as count FROM companies");
+        $result = $this->conn->query("SELECT COUNT(*) as count FROM companies WHERE status = 'active'");
         $stats['total_companies'] = $result->fetch_assoc()['count'];
 
         $result = $this->conn->query("SELECT COUNT(*) as count FROM job_applications");
@@ -33,6 +34,52 @@ class AdminDashboard {
 
         $result = $this->conn->query("SELECT COUNT(*) as count FROM users");
         $stats['total_users'] = $result->fetch_assoc()['count'];
+
+        // Job status distribution
+        $result = $this->conn->query("SELECT 
+            SUM(CASE WHEN status = 'open' AND (expires_at IS NULL OR expires_at >= CURDATE()) THEN 1 ELSE 0 END) as active_jobs,
+            SUM(CASE WHEN status = 'closed' OR expires_at < CURDATE() THEN 1 ELSE 0 END) as inactive_jobs
+            FROM job_listings");
+        $job_status = $result->fetch_assoc();
+        $stats['active_jobs'] = $job_status['active_jobs'];
+        $stats['inactive_jobs'] = $job_status['inactive_jobs'];
+
+        // Application status distribution
+        $result = $this->conn->query("SELECT 
+            status,
+            COUNT(*) as count
+            FROM job_applications
+            GROUP BY status");
+        $app_status = [];
+        while ($row = $result->fetch_assoc()) {
+            $app_status[$row['status']] = $row['count'];
+        }
+        $stats['application_status'] = $app_status;
+
+        // Recent activity metrics (last 7 days)
+        $result = $this->conn->query("SELECT 
+            (SELECT COUNT(*) FROM job_listings WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as new_jobs,
+            (SELECT COUNT(*) FROM job_applications WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as new_applications,
+            (SELECT COUNT(*) FROM users WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as new_users");
+        $recent = $result->fetch_assoc();
+        $stats['recent_activity'] = $recent;
+
+        // Top departments by applications
+        $result = $this->conn->query("SELECT 
+            d.name as department_name,
+            COUNT(ja.id) as application_count
+            FROM departments d
+            JOIN courses c ON c.department_id = d.id
+            JOIN users u ON u.course_id = c.id
+            JOIN job_applications ja ON ja.user_id = u.id
+            GROUP BY d.id, d.name
+            ORDER BY application_count DESC
+            LIMIT 5");
+        $top_departments = [];
+        while ($row = $result->fetch_assoc()) {
+            $top_departments[$row['department_name']] = $row['application_count'];
+        }
+        $stats['top_departments'] = $top_departments;
 
         return $stats;
     }
@@ -56,228 +103,9 @@ $admin_name = "Admin"; // You can replace this with dynamic admin name if availa
     <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
-    <style>
-        :root {
-            --primary-red: #C8102E;
-            --soft-red: #E63946;
-            --light-gray: #F8F9FA;
-            --dark-gray: #495057;
-            --pure-white: #FFFFFF;
-        }
-        
-        body {
-            background-color: var(--light-gray);
-            color: var(--dark-gray);
-        }
-        
-        .sidebar {
-            background-color: var(--primary-red);
-            min-height: 100vh;
-            padding: 20px;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: inherit;
-            overflow-y: auto;
-        }
-        
-        .logo-container {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 15px;
-        }
-        
-        .logo {
-            width: 150px;
-            height: auto;
-            margin-bottom: 15px;
-        }
-        
-        .logo-text {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #ffffff;
-            margin-bottom: 5px;
-        }
-        
-        .logo-subtext {
-            font-size: 1rem;
-            color: #ffffff;
-            font-weight: 500;
-        }
-        
-        .nav-link {
-            color: #ffffff;
-            padding: 10px 15px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .nav-link i {
-            font-size: 1.2rem;
-        }
-        
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-        }
-        
-        .nav-link.active {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-        }
-        
-        .stats-card {
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: none;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .stats-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            color: var(--primary-red);
-        }
-        
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .section-header i {
-            font-size: 1.5rem;
-            margin-right: 10px;
-            color: var(--primary-red);
-        }
-        
-        .job-card {
-            border: 1px solid #dee2e6;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-            background: var(--pure-white);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        
-        .job-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-        
-        .company-logo {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .badge {
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-weight: 500;
-        }
-
-        .welcome-section {
-            text-align: center;
-            padding: 30px 0;
-            background-color: var(--pure-white);
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .welcome-section h2 {
-            color: var(--dark-gray);
-            margin-bottom: 10px;
-        }
-
-        .welcome-section p {
-            color: var (--dark-gray);
-            font-size: 1.1rem;
-            margin-bottom: 0;
-        }
-
-        .search-bar {
-            width: 1100px;
-            max-width: 100%;
-            margin: 0 auto;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .search-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
-        
-        .search-button {
-            padding: 0.375rem 0.75rem;
-            background-color: var(--primary-red);
-            color: var(--pure-white);
-            border: none;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-        }
-        
-        .search-button:hover {
-            background-color: var(--soft-red);
-        }
-
-        .profile-section {
-            display: flex;
-            align-items: center;
-            margin-left: -50px;
-        }
-        
-        .profile-icon {
-            font-size: 1.5rem;
-            color: var(--primary-red);
-            cursor: pointer;
-        }
-
-        .btn-outline-primary {
-            color: var(--primary-red);
-            border-color: var(--primary-red);
-        }
-        
-        .btn-outline-primary:hover {
-            background-color: var(--primary-red);
-            border-color: var (--primary-red);
-            color: var (--pure-white);
-        }
-
-        .main-content {
-            margin-left: 16.666667%;
-        }
-    </style>
+    <link rel="stylesheet" href="../Assets/Styles/admin.css" />
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 <div class="container-fluid">
@@ -313,28 +141,18 @@ $admin_name = "Admin"; // You can replace this with dynamic admin name if availa
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Search and Profile -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="search-container">
-                        <div class="search-bar">
-                            <input type="text" class="form-control" placeholder="Search...">
-                            <button class="search-button">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="profile-section">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-person-circle profile-icon"></i>
-                            <span class="ms-2"><?php echo htmlspecialchars($admin_name); ?></span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Welcome Section -->
                 <div class="welcome-section">
-                    <h2>Welcome, <?php echo htmlspecialchars($admin_name); ?>!</h2>
-                    <p class="text-muted">Manage the job listings and applications efficiently.</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2>Welcome, Admin!</h2>
+                            <p class="text-muted mb-0">Manage the job listings and applications efficiently.</p>
+                        </div>
+                        <div class="profile-section">
+                            <i class="bi bi-person-circle profile-icon"></i>
+                            <span class="profile-name"><?php echo htmlspecialchars($admin_name); ?></span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Statistics Cards -->
@@ -366,6 +184,123 @@ $admin_name = "Admin"; // You can replace this with dynamic admin name if availa
                             <div class="stats-number text-warning"><?php echo $stats['total_users']; ?></div>
                             <div>Total Users</div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Job Status Distribution -->
+                <div class="mt-4">
+                    <div class="section-header mb-3">
+                        <h5><i class="bi bi-pie-chart-fill"></i> Job Status Distribution</h5>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="stats-card bg-success bg-opacity-10">
+                                <i class="bi bi-check-circle-fill stats-icon"></i>
+                                <div class="stats-number text-success"><?php echo $stats['active_jobs']; ?></div>
+                                <div>Active Jobs</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-card bg-danger bg-opacity-10">
+                                <i class="bi bi-x-circle-fill stats-icon"></i>
+                                <div class="stats-number text-danger"><?php echo $stats['inactive_jobs']; ?></div>
+                                <div>Inactive Jobs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Application Status Distribution -->
+                <div class="mt-4">
+                    <div class="section-header mb-3">
+                        <h5><i class="bi bi-graph-up"></i> Application Status Distribution</h5>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="stats-card bg-warning bg-opacity-10">
+                                <i class="bi bi-hourglass-split stats-icon"></i>
+                                <div class="stats-number text-warning"><?php echo $stats['application_status']['pending'] ?? 0; ?></div>
+                                <div>Pending Applications</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card bg-info bg-opacity-10">
+                                <i class="bi bi-search stats-icon"></i>
+                                <div class="stats-number text-info"><?php echo $stats['application_status']['reviewing'] ?? 0; ?></div>
+                                <div>Under Review</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card bg-primary bg-opacity-10">
+                                <i class="bi bi-calendar-event stats-icon"></i>
+                                <div class="stats-number text-primary"><?php echo $stats['application_status']['interview'] ?? 0; ?></div>
+                                <div>Interview Scheduled</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="stats-card bg-success bg-opacity-10">
+                                <i class="bi bi-check-circle stats-icon"></i>
+                                <div class="stats-number text-success"><?php echo $stats['application_status']['accepted'] ?? 0; ?></div>
+                                <div>Accepted Applications</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-card bg-danger bg-opacity-10">
+                                <i class="bi bi-x-circle stats-icon"></i>
+                                <div class="stats-number text-danger"><?php echo $stats['application_status']['rejected'] ?? 0; ?></div>
+                                <div>Rejected Applications</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="mt-4">
+                    <div class="section-header mb-3">
+                        <h5><i class="bi bi-activity"></i> Recent Activity (Last 7 Days)</h5>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="stats-card bg-primary bg-opacity-10">
+                                <i class="bi bi-briefcase stats-icon"></i>
+                                <div class="stats-number text-primary"><?php echo $stats['recent_activity']['new_jobs']; ?></div>
+                                <div>New Job Listings</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card bg-success bg-opacity-10">
+                                <i class="bi bi-file-text stats-icon"></i>
+                                <div class="stats-number text-success"><?php echo $stats['recent_activity']['new_applications']; ?></div>
+                                <div>New Applications</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card bg-info bg-opacity-10">
+                                <i class="bi bi-person-plus stats-icon"></i>
+                                <div class="stats-number text-info"><?php echo $stats['recent_activity']['new_users']; ?></div>
+                                <div>New Users</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Departments -->
+                <div class="mt-4">
+                    <div class="section-header mb-3">
+                        <h5><i class="bi bi-bar-chart-fill"></i> Top Departments by Applications</h5>
+                    </div>
+                    <div class="row">
+                        <?php foreach ($stats['top_departments'] as $department => $count): ?>
+                            <div class="col-md-4">
+                                <div class="stats-card bg-secondary bg-opacity-10">
+                                    <i class="bi bi-diagram-3 stats-icon"></i>
+                                    <div class="stats-number text-secondary"><?php echo $count; ?></div>
+                                    <div><?php echo htmlspecialchars($department); ?></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>

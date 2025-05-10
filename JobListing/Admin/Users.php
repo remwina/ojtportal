@@ -55,6 +55,8 @@ $users = $manager->getAllUsers();
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="../Assets/Styles/admin.css" />
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -90,26 +92,16 @@ $users = $manager->getAllUsers();
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Search and Profile -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="search-container">
-                        <div class="search-bar">
-                            <input type="text" class="form-control" placeholder="Search users...">
-                            <button class="search-button">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
+                <!-- Section Header with Profile -->
+                <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-people-fill me-2"></i>
+                        <h4 class="mb-0">Users Management</h4>
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
                         <span class="ms-2">Admin</span>
                     </div>
-                </div>
-
-                <!-- Section Header -->
-                <div class="section-header">
-                    <i class="bi bi-people-fill"></i>
-                    <h4 class="mb-0">Users Management</h4>
                 </div>
 
                 <!-- Users Table -->
@@ -188,7 +180,6 @@ $users = $manager->getAllUsers();
 
     <!-- Load scripts in correct order -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
@@ -196,6 +187,19 @@ $users = $manager->getAllUsers();
     <script src="../Assets/Scripts/admin.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
+            // Destroy existing DataTable instance if it exists
+            if ($.fn.DataTable.isDataTable('#usersTable')) {
+                $('#usersTable').DataTable().destroy();
+            }
+            
+            // Initialize fresh DataTable instance
+            $('#usersTable').DataTable({
+                pageLength: 10,
+                language: {
+                    search: "Filter records:"
+                }
+            });
+
             // Initialize CSRF token management
             await CSRFManager.init();
         });

@@ -155,6 +155,8 @@ $student_name = $_SESSION['student_name'];
             margin-left: 16.666667%;
         }
     </style>
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="container-fluid">

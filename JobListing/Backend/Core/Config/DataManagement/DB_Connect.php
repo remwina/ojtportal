@@ -18,6 +18,12 @@ class DBConn {
             throw new Exception("Connection failed: " . $this->conn->connect_error);
         }
 
+        // Set proper charset and collation for UTF-8
+        $this->conn->set_charset('utf8mb4');
+        $this->conn->query("SET NAMES utf8mb4");
+        $this->conn->query("SET CHARACTER SET utf8mb4");
+        $this->conn->query("SET COLLATION_CONNECTION = utf8mb4_unicode_ci");
+
         $this->conn->query("CREATE DATABASE IF NOT EXISTS " . $config['dbname']);
         
         if (!$this->conn->select_db($config['dbname'])) {
@@ -38,6 +44,21 @@ class DBConn {
 
     public function __destruct() {
         $this->close();
+    }
+
+    public static function sanitizeResponse($data) {
+        if (is_array($data) || is_object($data)) {
+            foreach ($data as &$value) {
+                if (is_array($value) || is_object($value)) {
+                    $value = self::sanitizeResponse($value);
+                } elseif (is_string($value)) {
+                    $value = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                }
+            }
+        } elseif (is_string($data)) {
+            $data = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+        }
+        return $data;
     }
 }
 ?>

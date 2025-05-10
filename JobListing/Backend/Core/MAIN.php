@@ -4,6 +4,13 @@ ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/error.log');
 
+// Set UTF-8 encoding for the script
+ini_set('default_charset', 'UTF-8');
+mb_internal_encoding('UTF-8');
+
+// Set UTF-8 headers
+header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/Config/DataManagement/DB_Connect.php';
 require_once __DIR__ . '/Config/DataManagement/DB_Operations.php';
 require_once __DIR__ . '/Security/TokenHandler.php';
@@ -14,8 +21,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-header('Content-Type: application/json');
-
 try {    
     $action = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['action'] ?? null) : ($_GET['action'] ?? null);
     $data = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
@@ -25,16 +30,30 @@ try {
     
     // Validate CSRF token for POST requests except skipped actions
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($action, $skipCSRFCheck)) {
+        error_log("Starting CSRF validation for action: " . $action);
+        
         // Check for token in headers (convert header name to uppercase as per PHP standard)
         $headers = array_change_key_case(getallheaders(), CASE_UPPER);
-        $token = $_POST['csrf_token'] ?? $headers['X-CSRF-TOKEN'] ?? null;
+        $token = $headers['X-CSRF-TOKEN'] ?? null;
         
         if (!$token) {
+            error_log("CSRF token missing in request headers");
+            error_log("Available headers: " . json_encode($headers));
             throw new Exception("CSRF token missing");
         }
+        
+        error_log("Received token: " . $token);
+        error_log("Current session status: " . session_status());
+        error_log("Session ID: " . session_id());
+        
         if (!TokenHandler::verifyToken($token)) {
+            error_log("Token verification failed");
+            error_log("Session token: " . ($_SESSION['csrf_token'] ?? 'not set'));
+            error_log("Session data: " . json_encode($_SESSION));
             throw new Exception("Invalid security token");
         }
+        
+        error_log("CSRF validation successful for action: " . $action);
     }
 
     if (!$action) {
@@ -277,19 +296,29 @@ try {
             break;
 
         case 'getJobListing':
-            $id = $_POST['id'] ?? $_GET['id'] ?? null;
-            if (!$id) {
+            if (!isset($_POST['id'])) {
                 throw new Exception("Job ID is required");
             }
+            
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
-            $stmt = $conn->prepare("SELECT * FROM job_listings WHERE id = ?");
-            $stmt->bind_param("i", $id);
-            $stmt->execute();
+            $stmt = $conn->prepare("CALL sp_get_job_details(?)");
+            if (!$stmt) {
+                throw new Exception("Error preparing statement: " . $conn->error);
+            }
+            $stmt->bind_param("i", $_POST['id']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error fetching job: " . $stmt->error);
+            }
             $result = $stmt->get_result();
+            $data = $result->fetch_assoc();
+            
+            // Sanitize the response data to ensure proper UTF-8 encoding
+            $data = DBConn::sanitizeResponse($data);
+            
             $response = [
                 'success' => true,
-                'data' => $result->fetch_assoc()
+                'data' => $data
             ];
             break;
 
@@ -299,35 +328,19 @@ try {
             }
             
             try {
-                // Validate company exists
                 $dbOps = new SQL_Operations();
                 $conn = $dbOps->getConnection();
-                
-                $checkStmt = $conn->prepare("SELECT id FROM companies WHERE id = ? AND status = 'active'");
-                if (!$checkStmt) {
-                    throw new Exception("Database error: " . $conn->error);
+
+                // Validate work mode
+                $validModes = ['onsite', 'hybrid', 'remote'];
+                if (!in_array($_POST['work_mode'], $validModes)) {
+                    throw new Exception("Invalid work mode");
                 }
-                
-                $checkStmt->bind_param("i", $_POST['company_id']);
-                if (!$checkStmt->execute()) {
-                    throw new Exception("Error checking company: " . $checkStmt->error);
-                }
-                
-                $result = $checkStmt->get_result();
-                if (!$result->fetch_assoc()) {
-                    throw new Exception("Invalid or inactive company selected");
-                }
-                
+
                 // Validate job type
                 $validTypes = ['full-time', 'part-time', 'internship'];
                 if (!in_array($_POST['job_type'], $validTypes)) {
                     throw new Exception("Invalid job type");
-                }
-
-                // Validate status
-                $validStatuses = ['open', 'closed', 'draft'];
-                if (!in_array($_POST['status'], $validStatuses)) {
-                    throw new Exception("Invalid status");
                 }
 
                 // Validate slots
@@ -343,104 +356,183 @@ try {
                         throw new Exception("Expiry date must be in the future");
                     }
                 }
-            } catch (Exception $e) {
-                error_log("Job listing validation error: " . $e->getMessage());
-                throw $e;
-            }
 
-            $stmt = $conn->prepare("CALL sp_add_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $expiresAt = isset($_POST['expires_at']) && !empty($_POST['expires_at']) ? $_POST['expires_at'] : null;
-            $requirements = isset($_POST['requirements']) ? $_POST['requirements'] : '';
-            
-            $stmt->bind_param("isssssiss", 
-                $_POST['company_id'],
-                $_POST['title'],
-                $_POST['description'],
-                $requirements,
-                $_POST['work_mode'],  // Using work_mode instead of location
-                $_POST['job_type'],
-                $_POST['slots'],
-                $_POST['status'],
-                $expiresAt
-            );
-            
-            if (!$stmt->execute()) {
-                throw new Exception("Failed to add job listing: " . $conn->error);
+                $stmt = $conn->prepare("CALL sp_add_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $expiresAt = isset($_POST['expires_at']) && !empty($_POST['expires_at']) ? $_POST['expires_at'] : null;
+                $requirements = isset($_POST['requirements']) ? $_POST['requirements'] : '';
+                $responsibilities = isset($_POST['responsibilities']) ? $_POST['responsibilities'] : '';
+                $qualifications = isset($_POST['qualifications']) ? $_POST['qualifications'] : '';
+                $benefits = isset($_POST['benefits']) ? $_POST['benefits'] : '';
+                $salaryRange = isset($_POST['salary_range']) ? $_POST['salary_range'] : '';
+                
+                $stmt->bind_param("issssssssssss", 
+                    $_POST['company_id'],
+                    $_POST['title'],
+                    $_POST['description'],
+                    $requirements,
+                    $responsibilities,
+                    $qualifications,
+                    $benefits,
+                    $salaryRange,
+                    $_POST['work_mode'],
+                    $_POST['job_type'],
+                    $_POST['slots'],
+                    $_POST['status'],
+                    $expiresAt
+                );
+
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to add job listing: " . $stmt->error);
+                }
+                $result = $stmt->get_result();
+                $row = $result->fetch_assoc();
+                $response = [
+                    'success' => true,
+                    'job_id' => $row['job_id'],
+                    'message' => 'Job listing added successfully'
+                ];
+            } catch (Exception $e) {
+                throw new Exception("Error adding job listing: " . $e->getMessage());
             }
-            $result = $stmt->get_result();
-            $jobId = $result->fetch_assoc()['job_id'];
-            $response = [
-                'success' => true,
-                'job_id' => $jobId,
-                'message' => 'Job listing added successfully'
-            ];
-            error_log("Job listing added successfully: ID " . $jobId);
             break;
 
         case 'updateJobListing':
-            if (!isset($_POST['id'], $_POST['title'], $_POST['description'], $_POST['job_type'], $_POST['slots'], $_POST['status'])) {
+            if (!isset($_POST['id'], $_POST['title'], $_POST['company_id'], $_POST['description'], $_POST['job_type'], $_POST['slots'], $_POST['status'], $_POST['work_mode'])) {
+                throw new Exception("Missing required fields");
+            }
+            
+            try {
+                $dbOps = new SQL_Operations();
+                $conn = $dbOps->getConnection();
+
+                // Validate work mode
+                $validModes = ['onsite', 'hybrid', 'remote'];
+                if (!in_array($_POST['work_mode'], $validModes)) {
+                    throw new Exception("Invalid work mode");
+                }
+
+                // Validate job type
+                $validTypes = ['full-time', 'part-time', 'internship'];
+                if (!in_array($_POST['job_type'], $validTypes)) {
+                    throw new Exception("Invalid job type");
+                }
+
+                // Validate slots
+                if (!is_numeric($_POST['slots']) || $_POST['slots'] < 1) {
+                    throw new Exception("Number of slots must be at least 1");
+                }
+
+                // Validate expiry date if provided
+                if (!empty($_POST['expires_at'])) {
+                    $expiryDate = new DateTime($_POST['expires_at']);
+                    $today = new DateTime();
+                    if ($expiryDate < $today) {
+                        throw new Exception("Expiry date must be in the future");
+                    }
+                }
+
+                $stmt = $conn->prepare("CALL sp_update_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $expiresAt = isset($_POST['expires_at']) && !empty($_POST['expires_at']) ? $_POST['expires_at'] : null;
+                
+                // Get optional fields with default empty strings
+                $requirements = isset($_POST['requirements']) ? $_POST['requirements'] : '';
+                $responsibilities = isset($_POST['responsibilities']) ? $_POST['responsibilities'] : '';
+                $qualifications = isset($_POST['qualifications']) ? $_POST['qualifications'] : '';
+                $benefits = isset($_POST['benefits']) ? $_POST['benefits'] : '';
+                $salaryRange = isset($_POST['salary_range']) ? $_POST['salary_range'] : '';
+
+                $stmt->bind_param("ississsssssss",
+                    $_POST['id'],
+                    $_POST['title'],
+                    $_POST['description'],
+                    $requirements,
+                    $responsibilities,
+                    $qualifications,
+                    $benefits,
+                    $salaryRange,
+                    $_POST['work_mode'],
+                    $_POST['job_type'],
+                    $_POST['slots'],
+                    $_POST['status'],
+                    $expiresAt
+                );
+                
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to update job listing: " . $stmt->error);
+                }
+                
+                $response = [
+                    'success' => true,
+                    'message' => 'Job listing updated successfully'
+                ];
+            } catch (Exception $e) {
+                error_log('Error in updateJobListing: ' . $e->getMessage());
+                http_response_code(400);
+                echo json_encode(['error' => 'Bad Request', 'message' => $e->getMessage()]);
+                exit;
+            }
+            break;
+
+        case 'updateCompany':
+            if (!isset($_POST['id'], $_POST['name'], $_POST['address'])) {
                 throw new Exception("Missing required fields");
             }
             
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
 
-            // Check if job listing exists
-            $checkStmt = $conn->prepare("SELECT id FROM job_listings WHERE id = ?");
-            $checkStmt->bind_param("i", $_POST['id']);
-            $checkStmt->execute();
-            if (!$checkStmt->get_result()->fetch_assoc()) {
-                throw new Exception("Job listing not found");
-            }
-
-            // Validate job type
-            $validTypes = ['full-time', 'part-time', 'internship'];
-            if (!in_array($_POST['job_type'], $validTypes)) {
-                throw new Exception("Invalid job type");
-            }
-
-            // Validate status
-            $validStatuses = ['open', 'closed', 'draft'];
-            if (!in_array($_POST['status'], $validStatuses)) {
-                throw new Exception("Invalid status");
-            }
-
-            // Validate slots
-            if (!is_numeric($_POST['slots']) || $_POST['slots'] < 1) {
-                throw new Exception("Number of slots must be at least 1");
-            }
-
-            // Validate expiry date if provided
-            if (!empty($_POST['expires_at'])) {
-                $expiryDate = new DateTime($_POST['expires_at']);
-                $today = new DateTime();
-                if ($expiryDate < $today) {
-                    throw new Exception("Expiry date must be in the future");
+            // Handle logo upload if present
+            $logoData = null;
+            $logoType = null;
+            if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
+                $logoData = file_get_contents($_FILES['logo']['tmp_name']);
+                $logoType = $_FILES['logo']['type'];
+                
+                // Validate image
+                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                if (!in_array($logoType, $allowedTypes)) {
+                    throw new Exception("Invalid logo format. Only JPG, PNG and GIF are allowed.");
                 }
             }
 
-            $stmt = $conn->prepare("CALL sp_update_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $expiresAt = isset($_POST['expires_at']) && !empty($_POST['expires_at']) ? $_POST['expires_at'] : null;
-            $requirements = isset($_POST['requirements']) ? $_POST['requirements'] : '';
-
-            $stmt->bind_param("isssssiss",
+            // Make sure to set the character set to handle UTF-8
+            $conn->set_charset('utf8mb4');
+            
+            $stmt = $conn->prepare("CALL sp_admin_update_company(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                throw new Exception("Error preparing statement: " . $conn->error);
+            }
+            
+            $status = $_POST['status'] ?? 'active';
+            
+            // Set empty strings for optional fields if they're not provided
+            $contact_person = $_POST['contact_person'] ?? '';
+            $contact_email = $_POST['contact_email'] ?? '';
+            $contact_phone = $_POST['contact_phone'] ?? '';
+            $website = $_POST['website'] ?? '';
+            $description = $_POST['description'] ?? '';
+            
+            $stmt->bind_param("issssssssss",
                 $_POST['id'],
-                $_POST['title'],
-                $_POST['description'],
-                $requirements,
-                $_POST['work_mode'],  // Using work_mode instead of location
-                $_POST['job_type'],
-                $_POST['slots'],
-                $_POST['status'],
-                $expiresAt
+                $_POST['name'],
+                $_POST['address'],
+                $contact_person,
+                $contact_email,
+                $contact_phone,
+                $website,
+                $description,
+                $logoData,
+                $logoType,
+                $status
             );
             
             if (!$stmt->execute()) {
-                throw new Exception("Failed to update job listing: " . $conn->error);
+                throw new Exception("Failed to update company: " . $conn->error);
             }
+            
             $response = [
                 'success' => true,
-                'message' => 'Job listing updated successfully'
+                'message' => 'Company updated successfully'
             ];
             break;
 
@@ -480,108 +572,6 @@ try {
                 'success' => true,
                 'company_id' => $companyId,
                 'message' => 'Company added successfully'
-            ];
-            break;
-
-        case 'updateCompany':
-            if (!isset($_POST['id'], $_POST['name'], $_POST['address'])) {
-                throw new Exception("Missing required fields");
-            }
-            $dbOps = new SQL_Operations();
-            $conn = $dbOps->getConnection();
-
-            // Handle logo upload if present
-            $logoData = null;
-            $logoType = null;
-            $hasNewLogo = false;
-            if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
-                $logoData = file_get_contents($_FILES['logo']['tmp_name']);
-                $logoType = $_FILES['logo']['type'];
-                
-                // Validate image
-                $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-                if (!in_array($logoType, $allowedTypes)) {
-                    throw new Exception("Invalid logo format. Only JPG, PNG and GIF are allowed.");
-                }
-                
-                // Set flag that we have a new logo
-                $hasNewLogo = true;
-            }
-
-            // Make sure to set the character set to handle UTF-8
-            $conn->set_charset('utf8mb4');
-            
-            // Prepare the SQL query based on whether we have a new logo
-            if ($hasNewLogo) {
-                $sql = "UPDATE companies SET 
-                        name = ?, 
-                        address = ?,
-                        contact_person = ?,
-                        contact_email = ?,
-                        contact_phone = ?,
-                        website = ?,
-                        description = ?,
-                        logo_data = ?,
-                        logo_type = ?,
-                        status = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?";
-            } else {
-                $sql = "UPDATE companies SET 
-                        name = ?, 
-                        address = ?,
-                        contact_person = ?,
-                        contact_email = ?,
-                        contact_phone = ?,
-                        website = ?,
-                        description = ?,
-                        status = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?";
-            }
-            
-            $stmt = $conn->prepare($sql);
-            if (!$stmt) {
-                throw new Exception("Error preparing statement: " . $conn->error);
-            }
-            
-            $status = $_POST['status'] ?? 'active';
-            
-            if ($hasNewLogo) {
-                $stmt->bind_param("ssssssssssi", 
-                    $_POST['name'],
-                    $_POST['address'],
-                    $_POST['contact_person'],
-                    $_POST['contact_email'],
-                    $_POST['contact_phone'],
-                    $_POST['website'],
-                    $_POST['description'],
-                    $logoData,
-                    $logoType,
-                    $status,
-                    $_POST['id']
-                );
-            } else {
-                $stmt->bind_param("sssssssssi", 
-                    $_POST['name'],
-                    $_POST['address'],
-                    $_POST['contact_person'],
-                    $_POST['contact_email'],
-                    $_POST['contact_phone'],
-                    $_POST['website'],
-                    $_POST['description'],
-                    $status,
-                    $_POST['id']
-                );
-            }
-            
-            if (!$stmt->execute()) {
-                throw new Exception("Failed to update company: " . $conn->error);
-            }
-            
-            $response = [
-                'success' => true,
-                'message' => 'Company updated successfully'
             ];
             break;
 

@@ -238,7 +238,7 @@ function time_ago($datetime) {
         }
         
         .clear-filters:hover {
-            color: var(--soft-red);
+            color: var (--soft-red);
             text-decoration: underline;
         }
         
@@ -402,6 +402,8 @@ function time_ago($datetime) {
             margin-left: 16.666667%;
         }
     </style>
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 <div class="container-fluid">

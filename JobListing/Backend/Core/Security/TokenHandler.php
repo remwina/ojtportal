@@ -2,8 +2,12 @@
 class TokenHandler {
     private static function ensureSession() {
         if (session_status() === PHP_SESSION_NONE) {
+            error_log("Starting new session in TokenHandler");
             session_start();
+        } else {
+            error_log("Session already active in TokenHandler. Session ID: " . session_id());
         }
+        error_log("Current session data: " . json_encode($_SESSION));
     }
 
     public static function generateToken() {

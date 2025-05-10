@@ -323,7 +323,7 @@ if ($resume_result) {
                 <div class="resume-card">
                     <h5 class="mb-3">Your Current Resume</h5>
                     <div class="d-flex align-items-center mb-3">
-                        <i class="bi bi-file-earmark-text me-2" style="font-size: 2rem; color: var(--primary-red);"></i>
+                        <i class="bi bi-file-earmark-text me-2" class="document-icon"></i>
                         <div>
                             <h6 class="mb-0"><?php echo basename($resume_data['resume_path']); ?></h6>
                             <small class="text-muted">Uploaded on: <?php echo date('F j, Y', strtotime($resume_data['uploaded_at'])); ?></small>

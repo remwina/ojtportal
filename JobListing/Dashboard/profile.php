@@ -175,6 +175,8 @@ $user_data = mysqli_fetch_assoc($result);
             }
         }
     </style>
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="container-fluid">

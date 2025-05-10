@@ -55,6 +55,8 @@ $applications = $manager->getAllApplications();
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="../Assets/Styles/admin.css" />
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -90,26 +92,12 @@ $applications = $manager->getAllApplications();
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Search and Profile -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="search-container">
-                        <div class="search-bar">
-                            <input type="text" class="form-control" placeholder="Search applications...">
-                            <button class="search-button">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="profile-section">
-                        <i class="bi bi-person-circle profile-icon"></i>
-                        <span class="ms-2">Admin</span>
-                    </div>
-                </div>
-
                 <!-- Section Header -->
-                <div class="section-header">
-                    <i class="bi bi-file-earmark-text-fill"></i>
-                    <h4 class="mb-0">Applications Management</h4>
+                <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-text-fill me-2"></i>
+                        <h4 class="mb-0">Applications Management</h4>
+                    </div>
                 </div>
 
                 <!-- Applications Table -->
@@ -142,8 +130,7 @@ $applications = $manager->getAllApplications();
                                     <td><?php echo date('M d, Y', strtotime($app['created_at'])); ?></td>
                                     <td>
                                         <select class="form-select form-select-sm status-select" 
-                                                data-id="<?php echo $app['id']; ?>"
-                                                style="width: 130px;">
+                                                data-id="<?php echo $app['id']; ?>">
                                             <option value="pending" <?php echo $app['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
                                             <option value="reviewing" <?php echo $app['status'] === 'reviewing' ? 'selected' : ''; ?>>Reviewing</option>
                                             <option value="interview" <?php echo $app['status'] === 'interview' ? 'selected' : ''; ?>>Interview</option>
@@ -202,10 +189,28 @@ $applications = $manager->getAllApplications();
     </div>
 
     <!-- Load scripts in correct order -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/admin.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
+            // Destroy existing DataTable instance if it exists
+            if ($.fn.DataTable.isDataTable('#applicationsTable')) {
+                $('#applicationsTable').DataTable().destroy();
+            }
+            
+            // Initialize fresh DataTable instance
+            $('#applicationsTable').DataTable({
+                order: [[3, 'desc']], // Sort by date column descending
+                pageLength: 10,
+                language: {
+                    search: "Filter records:"
+                }
+            });
+
             // Initialize CSRF token management
             await CSRFManager.init();
         });
