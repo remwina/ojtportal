@@ -277,13 +277,14 @@ try {
             break;
 
         case 'getJobListing':
-            if (!isset($_GET['id'])) {
+            $id = $_POST['id'] ?? $_GET['id'] ?? null;
+            if (!$id) {
                 throw new Exception("Job ID is required");
             }
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
             $stmt = $conn->prepare("SELECT * FROM job_listings WHERE id = ?");
-            $stmt->bind_param("i", $_GET['id']);
+            $stmt->bind_param("i", $id);
             $stmt->execute();
             $result = $stmt->get_result();
             $response = [
@@ -293,7 +294,7 @@ try {
             break;
 
         case 'addJobListing':
-            if (!isset($_POST['title'], $_POST['company_id'], $_POST['description'], $_POST['location'], $_POST['job_type'], $_POST['slots'], $_POST['status'])) {
+            if (!isset($_POST['title'], $_POST['company_id'], $_POST['description'], $_POST['job_type'], $_POST['slots'], $_POST['status'])) {
                 throw new Exception("Missing required fields");
             }
             
@@ -356,7 +357,7 @@ try {
                 $_POST['title'],
                 $_POST['description'],
                 $requirements,
-                $_POST['location'],
+                $_POST['work_mode'],  // Using work_mode instead of location
                 $_POST['job_type'],
                 $_POST['slots'],
                 $_POST['status'],
@@ -377,7 +378,7 @@ try {
             break;
 
         case 'updateJobListing':
-            if (!isset($_POST['id'], $_POST['title'], $_POST['description'], $_POST['location'], $_POST['job_type'], $_POST['slots'], $_POST['status'])) {
+            if (!isset($_POST['id'], $_POST['title'], $_POST['description'], $_POST['job_type'], $_POST['slots'], $_POST['status'])) {
                 throw new Exception("Missing required fields");
             }
             
@@ -427,7 +428,7 @@ try {
                 $_POST['title'],
                 $_POST['description'],
                 $requirements,
-                $_POST['location'],
+                $_POST['work_mode'],  // Using work_mode instead of location
                 $_POST['job_type'],
                 $_POST['slots'],
                 $_POST['status'],

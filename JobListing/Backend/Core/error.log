@@ -67,3 +67,7 @@
 [10-May-2025 10:14:49 Europe/Berlin] mysqli_stmt::bind_param(): Argument #5 cannot be passed by reference
 [10-May-2025 10:30:26 Europe/Berlin] The number of elements in the type definition string must match the number of bind variables
 [10-May-2025 10:30:30 Europe/Berlin] The number of elements in the type definition string must match the number of bind variables
+[10-May-2025 11:18:42 Europe/Berlin] Unknown column 'work_mode' in 'field list'
+[10-May-2025 11:36:29 Europe/Berlin] Job listing added successfully: ID 1
+[10-May-2025 12:01:33 Europe/Berlin] Job ID is required
+[10-May-2025 12:05:56 Europe/Berlin] Job listing added successfully: ID 2

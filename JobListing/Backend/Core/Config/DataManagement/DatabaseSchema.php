@@ -86,14 +86,13 @@ class DatabaseSchema {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )",
-            
-            'job_listings' => "CREATE TABLE IF NOT EXISTS job_listings (
+              'job_listings' => "CREATE TABLE IF NOT EXISTS job_listings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 company_id INT NOT NULL,
                 title VARCHAR(100) NOT NULL,
                 description TEXT NOT NULL,
                 requirements TEXT,
-                location VARCHAR(255),
+                work_mode ENUM('onsite', 'hybrid', 'remote') NOT NULL DEFAULT 'onsite',
                 job_type ENUM('full-time', 'part-time', 'internship') NOT NULL,
                 slots INT NOT NULL DEFAULT 1,
                 status ENUM('open', 'closed', 'draft') NOT NULL DEFAULT 'draft',

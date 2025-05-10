@@ -259,8 +259,7 @@ $companies = $manager->getAllCompanies();
                 <td><?php echo htmlspecialchars($job['work_mode']); ?></td>
                 <td><?php echo htmlspecialchars(ucfirst($job['job_type'])); ?></td>
                 <td><?php echo date('M d, Y', strtotime($job['created_at'])); ?></td>
-                <td>
-                    <span class="badge bg-<?php echo $job['status'] === 'active' ? 'success' : 'warning'; ?>">
+                <td>                    <span class="badge bg-<?php echo $job['status'] === 'open' ? 'success' : ($job['status'] === 'draft' ? 'warning' : 'danger'); ?>">
                                         <?php echo ucfirst($job['status']); ?>
                                     </span>
                                 </td>
@@ -330,8 +329,7 @@ $companies = $manager->getAllCompanies();
                                     <option value="part-time">Part Time</option>
                                     <option value="internship">Internship</option>
                                 </select>
-                            </div>
-                        </div>
+                            </div>                        </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -372,8 +370,9 @@ $companies = $manager->getAllCompanies();
                             <div class="col-md-6">
                                 <label class="form-label">Status</label>
                                 <select class="form-select" name="status" required>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
+                                    <option value="open">Open</option>
+                                    <option value="closed">Closed</option>
+                                    <option value="draft">Draft</option>
                                 </select>
                             </div>
                         </div>
@@ -480,8 +479,9 @@ $companies = $manager->getAllCompanies();
                             <div class="col-md-6">
                                 <label class="form-label">Status</label>
                                 <select class="form-select" name="status" required>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
+                                    <option value="open">Open</option>
+                                    <option value="closed">Closed</option>
+                                    <option value="draft">Draft</option>
                                 </select>
                             </div>
                         </div>

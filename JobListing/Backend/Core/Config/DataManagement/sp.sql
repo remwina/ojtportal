@@ -169,7 +169,7 @@ CREATE PROCEDURE sp_add_job_listing(
     IN p_title VARCHAR(100),
     IN p_description TEXT,
     IN p_requirements TEXT,
-    IN p_location VARCHAR(255),
+    IN p_work_mode ENUM('onsite', 'hybrid', 'remote'),
     IN p_job_type ENUM('full-time', 'part-time', 'internship'),
     IN p_slots INT,
     IN p_status ENUM('open', 'closed', 'draft'),
@@ -178,10 +178,10 @@ CREATE PROCEDURE sp_add_job_listing(
 BEGIN
     INSERT INTO job_listings (
         company_id, title, description, requirements,
-        location, job_type, slots, status, expires_at
+        work_mode, job_type, slots, status, expires_at
     ) VALUES (
         p_company_id, p_title, p_description, p_requirements,
-        p_location, p_job_type, p_slots, p_status, p_expires_at
+        p_work_mode, p_job_type, p_slots, p_status, p_expires_at
     );
     SELECT LAST_INSERT_ID() as job_id;
 END$$
@@ -191,7 +191,7 @@ CREATE PROCEDURE sp_update_job_listing(
     IN p_title VARCHAR(100),
     IN p_description TEXT,
     IN p_requirements TEXT,
-    IN p_location VARCHAR(255),
+    IN p_work_mode ENUM('onsite', 'hybrid', 'remote'),
     IN p_job_type ENUM('full-time', 'part-time', 'internship'),
     IN p_slots INT,
     IN p_status ENUM('open', 'closed', 'draft'),
@@ -202,7 +202,7 @@ BEGIN
     SET title = p_title,
         description = p_description,
         requirements = p_requirements,
-        location = p_location,
+        work_mode = p_work_mode,
         job_type = p_job_type,
         slots = p_slots,
         status = p_status,

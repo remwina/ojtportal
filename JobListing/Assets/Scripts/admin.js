@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     formData.append('csrf_token', await CSRFManager.ensureValidToken());
                     
                     // Validate required fields
-                    const requiredFields = ['title', 'company_id', 'description', 'location', 'job_type', 'slots', 'status'];
+                    const requiredFields = ['title', 'company_id', 'description', 'job_type', 'slots', 'status'];
                     for (const field of requiredFields) {
                         const value = formData.get(field);
                         if (!value || value.trim() === '') {
@@ -184,18 +184,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Edit button handler
+    // Edit button handler 
     document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', async function() {
             try {
                 const id = this.dataset.id;
                 if (!id || isNaN(parseInt(id))) {
-                    throw new Error('Invalid company ID');
+                    throw new Error('Invalid ID');
                 }
+                
+                // Determine if we're editing a company or job listing based on the page
+                const isJobListing = window.location.pathname.includes('JobListings.php');
+                const action = isJobListing ? 'getJobListing' : 'getCompany';
                 
                 const token = await CSRFManager.ensureValidToken();
                 const formData = new FormData();
-                formData.append('action', 'getCompany');
+                formData.append('action', action);
                 formData.append('id', id);
                 formData.append('csrf_token', token);
 
@@ -214,45 +218,71 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 const data = await response.json();
                 if (!data.success) {
-                    throw new Error(data.message || 'Failed to load company details');
+                    throw new Error(data.message || 'Failed to load details');
                 }
 
-                const company = data.data;
-                const form = document.getElementById('editCompanyForm');
+                const item = data.data;
+                const modalId = isJobListing ? 'editJobModal' : 'editCompanyModal';
+                const formId = isJobListing ? 'editJobForm' : 'editCompanyForm';
+                
+                const form = document.getElementById(formId);
                 if (!form) {
                     throw new Error('Edit form not found');
                 }
                 
-                // Fill form fields
-                form.elements['id'].value = company.id;
-                form.elements['name'].value = company.name;
-                form.elements['address'].value = company.address;
-                form.elements['contact_person'].value = company.contact_person || '';
-                form.elements['contact_email'].value = company.contact_email || '';
-                form.elements['contact_phone'].value = company.contact_phone || '';
-                form.elements['website'].value = company.website || '';
-                form.elements['description'].value = company.description || '';
-                form.elements['status'].value = company.status;
+                // Reset the form first to clear any previous data
+                form.reset();
                 
-                // Show current logo preview
-                const previewDiv = form.querySelector('#currentLogoPreview');
-                if (previewDiv) {
-                    previewDiv.innerHTML = `
-                        <img src="../Backend/Core/get_company_logo.php?id=${company.id}" 
-                             alt="Current Logo" 
-                             style="max-width: 100px; max-height: 100px; object-fit: contain;">
-                    `;
+                if (isJobListing) {
+                    // Fill job listing form fields
+                    form.elements['id'].value = item.id;
+                    form.elements['title'].value = item.title;
+                    form.elements['company_id'].value = item.company_id;
+                    form.elements['description'].value = item.description;
+                    form.elements['work_mode'].value = item.work_mode;
+                    form.elements['job_type'].value = item.job_type;
+                    form.elements['slots'].value = item.slots;
+                    form.elements['salary_range'].value = item.salary_range || '';
+                    form.elements['requirements'].value = item.requirements || '';
+                    form.elements['responsibilities'].value = item.responsibilities || '';
+                    form.elements['qualifications'].value = item.qualifications || '';
+                    form.elements['benefits'].value = item.benefits || '';
+                    form.elements['status'].value = item.status;
+                    if (item.expires_at) {
+                        form.elements['expires_at'].value = item.expires_at.split(' ')[0]; // Get just the date part
+                    }
+                } else {
+                    // Fill company form fields
+                    form.elements['id'].value = item.id;
+                    form.elements['name'].value = item.name;
+                    form.elements['address'].value = item.address;
+                    form.elements['contact_person'].value = item.contact_person || '';
+                    form.elements['contact_email'].value = item.contact_email || '';
+                    form.elements['contact_phone'].value = item.contact_phone || '';
+                    form.elements['website'].value = item.website || '';
+                    form.elements['description'].value = item.description || '';
+                    form.elements['status'].value = item.status;
+                    
+                    // Show current logo preview for companies
+                    const previewDiv = form.querySelector('#currentLogoPreview');
+                    if (previewDiv) {
+                        previewDiv.innerHTML = `
+                            <img src="../Backend/Core/get_company_logo.php?id=${item.id}" 
+                                 alt="Current Logo" 
+                                 style="max-width: 100px; max-height: 100px; object-fit: contain;">
+                        `;
+                    }
                 }
-                
-                // Show modal
-                const editModal = new bootstrap.Modal(document.getElementById('editCompanyModal'));
-                editModal.show();
+
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById(modalId));
+                modal.show();
                 
             } catch (error) {
                 console.error('Error:', error);
                 await Swal.fire({
-                    title: 'Error!',
-                    text: error.message || 'Failed to load company details',
+                    title: 'Error!', 
+                    text: error.message || 'Failed to load details',
                     icon: 'error'
                 });
             }
