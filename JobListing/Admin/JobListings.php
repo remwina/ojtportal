@@ -15,16 +15,19 @@ if (!$auth->check()) {
 
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
-class JobListingsManager {
+class JobListingsManager
+{
     private $dbOps;
     private $conn;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->dbOps = new SQL_Operations();
         $this->conn = $this->dbOps->getConnection();
     }
 
-    public function getAllJobListings() {
+    public function getAllJobListings()
+    {
         // Use stored procedure for getting job listings
         $stmt = $this->conn->prepare("CALL sp_get_job_listings()");
         if (!$stmt) {
@@ -36,7 +39,8 @@ class JobListingsManager {
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function getJobById($id) {
+    public function getJobById($id)
+    {
         // Use stored procedure for getting job details
         $stmt = $this->conn->prepare("CALL sp_get_job_details(?)");
         if (!$stmt) {
@@ -49,14 +53,16 @@ class JobListingsManager {
         return $stmt->get_result()->fetch_assoc();
     }
 
-    public function addJobListing($data) {
+    public function addJobListing($data)
+    {
         // Use stored procedure for adding a job
         $stmt = $this->conn->prepare("CALL sp_add_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             throw new Exception("Error preparing statement: " . $this->conn->error);
         }
 
-        $stmt->bind_param("isssssiss", 
+        $stmt->bind_param(
+            "isssssiss",
             $data['company_id'],
             $data['title'],
             $data['description'],
@@ -76,14 +82,16 @@ class JobListingsManager {
         return $row['job_id'];
     }
 
-    public function updateJobListing($data) {
+    public function updateJobListing($data)
+    {
         // Use stored procedure for updating a job
         $stmt = $this->conn->prepare("CALL sp_update_job_listing(?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             throw new Exception("Error preparing statement: " . $this->conn->error);
         }
 
-        $stmt->bind_param("isssssiss",
+        $stmt->bind_param(
+            "isssssiss",
             $data['id'],
             $data['title'],
             $data['description'],
@@ -101,7 +109,8 @@ class JobListingsManager {
         return true;
     }
 
-    public function deleteJobListing($id) {
+    public function deleteJobListing($id)
+    {
         // First check if job has any applications
         $stmt = $this->conn->prepare("SELECT COUNT(*) as count FROM job_applications WHERE job_id = ?");
         if (!$stmt) {
@@ -113,7 +122,7 @@ class JobListingsManager {
         }
         $result = $stmt->get_result();
         $count = $result->fetch_assoc()['count'];
-        
+
         if ($count > 0) {
             throw new Exception("Cannot delete job listing that has applications");
         }
@@ -130,7 +139,8 @@ class JobListingsManager {
         return true;
     }
 
-    public function getAllCompanies() {
+    public function getAllCompanies()
+    {
         // Use stored procedure to get active companies
         $stmt = $this->conn->prepare("CALL sp_get_companies()");
         if (!$stmt) {
@@ -142,7 +152,8 @@ class JobListingsManager {
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function __destruct() {
+    public function __destruct()
+    {
         // Connection will be closed by SQL_Operations
     }
 }
@@ -154,6 +165,7 @@ $companies = $manager->getAllCompanies();
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -165,6 +177,7 @@ $companies = $manager->getAllCompanies();
     <!-- Add SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="row">
@@ -209,53 +222,54 @@ $companies = $manager->getAllCompanies();
                         <i class="bi bi-person-circle profile-icon"></i>
                         <span class="ms-2">Admin</span>
                     </div>
-                </div>                <!-- Job Listings Table -->
+                </div> <!-- Job Listings Table -->
                 <div class="table-responsive">
                     <table class="table table-hover" id="jobListingsTable">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Title</th>
                                 <th>Company</th>
-                <th>Work Mode</th>
-                <th>Type</th>
-                <th>Posted</th>
-                <th>Status</th>
-                <th>Actions</th>
+                                <th>Salary Range</th>
+                                <th>Number of Slots</th>
+                                <th>Work Mode</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($jobListings as $job): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($job['id']); ?></td>
-                                <td><?php echo htmlspecialchars($job['title']); ?></td>
-                                <td><?php echo htmlspecialchars($job['company_name']); ?></td>
-                <td><?php echo htmlspecialchars($job['work_mode']); ?></td>
-                <td><?php echo htmlspecialchars(ucfirst($job['job_type'])); ?></td>
-                <td><?php echo date('M d, Y', strtotime($job['created_at'])); ?></td>
-                <td>                    <span class="badge bg-<?php echo $job['status'] === 'open' ? 'success' : ($job['status'] === 'draft' ? 'warning' : 'danger'); ?>">
-                                        <?php echo ucfirst($job['status']); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-primary edit-btn" data-id="<?php echo $job['id']; ?>" data-bs-toggle="modal" data-bs-target="#editJobModal">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger delete-btn" data-id="<?php echo $job['id']; ?>">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($job['title']); ?></td>
+                                    <td><?php echo htmlspecialchars($job['company_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($job['salary_range'] ?? 'Not specified'); ?></td>
+                                    <td><?php echo htmlspecialchars($job['slots']); ?></td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <?php echo htmlspecialchars(ucfirst($job['work_mode'])); ?>
+                                        </span>
+                                    </td>                                    <td>
+                                        <span class="badge bg-<?php echo $job['status'] === 'open' ? 'success' : 'danger'; ?>">
+                                            <?php echo ucfirst($job['status']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary edit-btn" data-id="<?php echo $job['id']; ?>" data-bs-toggle="modal" data-bs-target="#editJobModal">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-btn" data-id="<?php echo $job['id']; ?>">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                </div>
-
-                <!-- Add New Job Button -->
-                <div class="add-button-container">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addJobModal">
-                        <i class="bi bi-plus-circle"></i> Add New Job
-                    </button>
+                    <!-- Add New Job Button -->
+                    <div class="add-button-container">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addJobModal">
+                            <i class="bi bi-plus-circle"></i> Add New Job
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -281,14 +295,14 @@ $companies = $manager->getAllCompanies();
                                 <select class="form-select" name="company_id" required>
                                     <option value="">Select Company</option>
                                     <?php foreach ($companies as $company): ?>
-                                    <option value="<?php echo $company['id']; ?>">
-                                        <?php echo htmlspecialchars($company['name']); ?>
-                                    </option>
+                                        <option value="<?php echo $company['id']; ?>">
+                                            <?php echo htmlspecialchars($company['name']); ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label class="form-label">Description</label>
                             <textarea class="form-control" name="description" rows="3" required></textarea>
@@ -312,7 +326,8 @@ $companies = $manager->getAllCompanies();
                                     <option value="part-time">Part Time</option>
                                     <option value="internship">Internship</option>
                                 </select>
-                            </div>                        </div>
+                            </div>
+                        </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -345,8 +360,7 @@ $companies = $manager->getAllCompanies();
                             <textarea class="form-control" name="benefits" rows="3"></textarea>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
+                        <div class="row mb-3">                            <div class="col-md-6">
                                 <label class="form-label">Expiry Date</label>
                                 <input type="date" class="form-control" name="expires_at">
                             </div>
@@ -355,7 +369,6 @@ $companies = $manager->getAllCompanies();
                                 <select class="form-select" name="status" required>
                                     <option value="open">Open</option>
                                     <option value="closed">Closed</option>
-                                    <option value="draft">Draft</option>
                                 </select>
                             </div>
                         </div>
@@ -390,15 +403,15 @@ $companies = $manager->getAllCompanies();
                                 <select class="form-select" name="company_id" required>
                                     <option value="">Select Company</option>
                                     <?php foreach ($companies as $company): ?>
-                                    <option value="<?php echo $company['id']; ?>">
-                                        <?php echo htmlspecialchars($company['name']); ?>
-                                    </option>
+                                        <option value="<?php echo $company['id']; ?>">
+                                            <?php echo htmlspecialchars($company['name']); ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
-                        
-                        <div class="mb-3">                                <label class="form-label">Description</label>
+
+                        <div class="mb-3"> <label class="form-label">Description</label>
                             <textarea class="form-control" name="description" rows="3" required></textarea>
                         </div>
 
@@ -454,8 +467,7 @@ $companies = $manager->getAllCompanies();
                             <textarea class="form-control" name="benefits" rows="3"></textarea>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
+                        <div class="row mb-3">                            <div class="col-md-6">
                                 <label class="form-label">Expiry Date</label>
                                 <input type="date" class="form-control" name="expires_at">
                             </div>
@@ -464,7 +476,6 @@ $companies = $manager->getAllCompanies();
                                 <select class="form-select" name="status" required>
                                     <option value="open">Open</option>
                                     <option value="closed">Closed</option>
-                                    <option value="draft">Draft</option>
                                 </select>
                             </div>
                         </div>
@@ -476,7 +487,7 @@ $companies = $manager->getAllCompanies();
                 </div>
             </div>
         </div>
-    </div>    <!-- Load scripts in correct order -->
+    </div> <!-- Load scripts in correct order -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
@@ -489,8 +500,11 @@ $companies = $manager->getAllCompanies();
             if ($.fn.DataTable.isDataTable('#jobListingsTable')) {
                 $('#jobListingsTable').DataTable().destroy();
             }
-            
+
             $('#jobListingsTable').DataTable({
+                order: [
+                    [5, 'desc']
+                ], // Sort by posted date descending
                 pageLength: 10,
                 language: {
                     search: "Search jobs:",
@@ -500,8 +514,8 @@ $companies = $manager->getAllCompanies();
                     emptyTable: "No jobs available"
                 },
                 dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-                     "<'row'<'col-sm-12'tr>>" +
-                     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
             });
 
             // Initialize CSRF token management
@@ -509,44 +523,5 @@ $companies = $manager->getAllCompanies();
         });
     </script>
 </body>
-</html>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="changePasswordBtn">Change Password</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Load scripts in correct order -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="../Assets/Scripts/csrf.js"></script>
-    <script src="../Assets/Scripts/admin.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Destroy existing DataTable instance if it exists
-            if ($.fn.DataTable.isDataTable('#jobListingsTable')) {
-                $('#jobListingsTable').DataTable().destroy();
-            }
-            
-            // Initialize fresh DataTable instance
-            $('#jobListingsTable').DataTable({
-                order: [[5, 'desc']], // Sort by posted date descending
-                pageLength: 10,
-                language: {
-                    search: "Filter records:"
-                }
-            });
-
-            // Initialize CSRF token management
-            await CSRFManager.init();
-        });
-    </script>
-</body>
 </html>

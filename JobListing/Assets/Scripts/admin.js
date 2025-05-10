@@ -446,13 +446,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                             validateLogo(logoFile);
                         }
                         
-                        // Add action to form data
+                        // Get CSRF token
+                        const token = await CSRFManager.ensureValidToken();
+                        
+                        // Add action and CSRF token to form data
                         formData.append('action', 'addCompany');
-                        formData.append('csrf_token', await CSRFManager.ensureValidToken());
+                        formData.append('csrf_token', token);
 
                         const response = await fetch('../Backend/Core/MAIN.php', {
                             method: 'POST',
-                            body: formData
+                            body: formData,
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Csrf-Token': token
+                            }
                         });
 
                         const data = await response.json();
@@ -810,9 +817,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const phone = form.elements['contact_phone']?.value?.trim() || '';
                     const description = form.elements['description']?.value?.trim() || '';
                     
+                    // Get CSRF token
+                    const token = await CSRFManager.ensureValidToken();
+
                     // Add all fields to form data
                     formData.append('action', 'updateCompany');
-                    formData.append('csrf_token', await CSRFManager.ensureValidToken());
+                    formData.append('csrf_token', token);
                     formData.append('website', website);
                     formData.append('contact_email', email);
                     formData.append('contact_phone', phone);
@@ -822,7 +832,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'Accept': 'application/json'
+                            'Accept': 'application/json',
+                            'X-Csrf-Token': token
                         }
                     });
 
@@ -849,10 +860,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // Password management functionality
-        document.querySelector('.profile-section').addEventListener('click', function() {
-            const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
-            modal.show();
-        });
+        const profileSection = document.querySelector('.profile-section');
+        if (profileSection) {
+            profileSection.addEventListener('click', function() {
+                const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+                modal.show();
+            });
+        }
 
         const changePasswordBtn = document.getElementById('changePasswordBtn');
         if (changePasswordBtn) {

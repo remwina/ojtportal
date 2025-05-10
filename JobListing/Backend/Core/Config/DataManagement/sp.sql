@@ -12,7 +12,6 @@ DROP PROCEDURE IF EXISTS sp_get_user_applications;
 DROP PROCEDURE IF EXISTS sp_submit_application;
 DROP PROCEDURE IF EXISTS sp_add_company;
 DROP PROCEDURE IF EXISTS sp_update_company;
-
 DROP PROCEDURE IF EXISTS sp_get_company_by_id;
 DROP PROCEDURE IF EXISTS sp_get_companies;
 DROP PROCEDURE IF EXISTS sp_add_job_listing;
@@ -176,7 +175,7 @@ CREATE PROCEDURE sp_add_job_listing(
     IN p_work_mode ENUM('onsite', 'hybrid', 'remote'),
     IN p_job_type ENUM('full-time', 'part-time', 'internship'),
     IN p_slots INT,
-    IN p_status ENUM('open', 'closed', 'draft'),
+    IN p_status ENUM('open', 'closed'),
     IN p_expires_at DATE
 )
 BEGIN
@@ -204,7 +203,7 @@ CREATE PROCEDURE sp_update_job_listing(
     IN p_work_mode ENUM('onsite', 'hybrid', 'remote'),
     IN p_job_type ENUM('full-time', 'part-time', 'internship'),
     IN p_slots INT,
-    IN p_status ENUM('open', 'closed', 'draft'),
+    IN p_status ENUM('open', 'closed'),
     IN p_expires_at DATE
 )
 BEGIN

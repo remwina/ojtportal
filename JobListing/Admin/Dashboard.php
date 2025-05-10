@@ -8,6 +8,9 @@ if (!$auth->check() || $auth->usertype() !== 'admin') {
     exit();
 }
 
+// Get admin name from session
+$adminName = isset($_SESSION['admin_name']) ? $_SESSION['admin_name'] : 'Admin';
+
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
 class AdminDashboard {
@@ -90,9 +93,7 @@ class AdminDashboard {
 }
 
 $dashboard = new AdminDashboard();
-$stats = $dashboard->getStats();
-
-$admin_name = "Admin"; // You can replace this with dynamic admin name if available
+$stats = $dashboard->getStats();// You can replace this with dynamic admin name if available
 ?>
 
 <!DOCTYPE html>
@@ -145,12 +146,12 @@ $admin_name = "Admin"; // You can replace this with dynamic admin name if availa
                 <div class="welcome-section">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2>Welcome, Admin!</h2>
+                            <h2>Welcome, <?php echo htmlspecialchars($adminName); ?>!</h2>
                             <p class="text-muted mb-0">Manage the job listings and applications efficiently.</p>
                         </div>
                         <div class="profile-section">
                             <i class="bi bi-person-circle profile-icon"></i>
-                            <span class="profile-name"><?php echo htmlspecialchars($admin_name); ?></span>
+                            <span class="profile-name"><?php echo htmlspecialchars($adminName); ?></span>
                         </div>
                     </div>
                 </div>

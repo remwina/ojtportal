@@ -15,6 +15,10 @@ if (!$auth->check()) {
     exit();
 }
 
+// Get admin name from session (stored as student_name during login)
+$adminName = isset($_SESSION['student_name']) ? $_SESSION['student_name'] : 'Admin';
+
+
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
 class UsersManager {
@@ -100,7 +104,7 @@ $users = $manager->getAllUsers();
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
-                        <span class="ms-2">Admin</span>
+                        <span class="profile-name"><?php echo htmlspecialchars($adminName); ?></span>
                     </div>
                 </div>
 

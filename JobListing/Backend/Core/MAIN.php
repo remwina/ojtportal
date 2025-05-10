@@ -441,7 +441,7 @@ try {
                 $benefits = isset($_POST['benefits']) ? $_POST['benefits'] : '';
                 $salaryRange = isset($_POST['salary_range']) ? $_POST['salary_range'] : '';
 
-                $stmt->bind_param("ississsssssss",
+                $stmt->bind_param("isssssssssiss",
                     $_POST['id'],
                     $_POST['title'],
                     $_POST['description'],

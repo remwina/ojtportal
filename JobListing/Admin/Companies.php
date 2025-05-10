@@ -13,6 +13,8 @@ if (!$auth->check()) {
     exit();
 }
 
+$adminName = isset($_SESSION['student_name']) ? $_SESSION['student_name'] : 'Admin';
+
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
 class CompaniesManager {
@@ -25,103 +27,14 @@ class CompaniesManager {
     }
 
     public function getAllCompanies() {
-        $result = $this->conn->query("SELECT * FROM companies ORDER BY name ASC");
-            if (!$result) {
+        $query = "SELECT c.*, 
+                 (SELECT COUNT(*) FROM job_listings WHERE company_id = c.id AND status = 'open') as open_positions 
+                 FROM companies c ORDER BY c.name ASC";
+        $result = $this->conn->query($query);
+        if (!$result) {
             throw new Exception("Error fetching companies: " . $this->conn->error);
         }
         return $result->fetch_all(MYSQLI_ASSOC);
-    }
-
-    public function getCompanyById($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM companies WHERE id = ?");
-        if (!$stmt) {
-            throw new Exception("Error preparing statement: " . $this->conn->error);
-        }
-        $stmt->bind_param('i', $id);
-        if (!$stmt->execute()) {
-            throw new Exception("Error fetching company: " . $stmt->error);
-        }
-        $result = $stmt->get_result();
-        return $result->fetch_assoc();
-    }
-
-    public function addCompany($data) {
-        $stmt = $this->conn->prepare("CALL sp_admin_add_company(?, ?, ?, ?, ?, ?, ?, ?)");
-        if (!$stmt) {
-            throw new Exception("Error preparing statement: " . $this->conn->error);
-        }
-        $stmt->bind_param("ssssssss", 
-            $data['name'],
-            $data['address'],
-            $data['contact_person'],
-            $data['contact_email'],
-            $data['contact_phone'],
-            $data['website'],
-            $data['description'],
-            $data['logo_path']
-        );
-        if (!$stmt->execute()) {
-            throw new Exception("Error adding company: " . $stmt->error);
-        }
-        $result = $stmt->get_result();
-        return $result->fetch_assoc()['company_id'];
-    }
-
-    public function updateCompany($data) {
-        $stmt = $this->conn->prepare("CALL sp_admin_update_company(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        if (!$stmt) {
-            throw new Exception("Error preparing statement: " . $this->conn->error);
-        }
-        $stmt->bind_param("issssssssss",
-            $data['id'],
-            $data['name'],
-            $data['address'],
-            $data['contact_person'],
-            $data['contact_email'],
-            $data['contact_phone'],
-            $data['website'],
-            $data['description'],
-            $data['logo_data'],
-            $data['logo_type'],
-            $data['status']
-        );
-        if (!$stmt->execute()) {
-            throw new Exception("Error updating company: " . $stmt->error);
-        }
-        return true;
-    }
-
-    public function deleteCompany($id) {
-        // First check if company has any job listings
-        $stmt = $this->conn->prepare("SELECT COUNT(*) as count FROM job_listings WHERE company_id = ?");
-        if (!$stmt) {
-            throw new Exception("Error preparing statement: " . $this->conn->error);
-        }
-        $stmt->bind_param('i', $id);
-        if (!$stmt->execute()) {
-            throw new Exception("Error checking job listings: " . $stmt->error);
-        }
-        $result = $stmt->get_result();
-        $count = $result->fetch_assoc()['count'];
-        
-        if ($count > 0) {
-            throw new Exception("Cannot delete company that has job listings");
-        }
-
-        // If no job listings, proceed with deletion
-        $stmt = $this->conn->prepare("DELETE FROM companies WHERE id = ?");
-        if (!$stmt) {
-            throw new Exception("Error preparing delete statement: " . $this->conn->error);
-        }
-        $stmt->bind_param('i', $id);
-        if (!$stmt->execute()) {
-            throw new Exception("Error deleting company: " . $stmt->error);
-        }
-        return true;
-    }
-
-    public function __destruct() {
-        // Connection will be closed by SQL_Operations
     }
 }
 
@@ -139,6 +52,7 @@ $companies = $manager->getAllCompanies();
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
     <link rel="stylesheet" href="../Assets/Styles/admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -174,7 +88,7 @@ $companies = $manager->getAllCompanies();
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Section Header with Profile -->
+                <!-- Section Header -->
                 <div class="section-header d-flex justify-content-between align-items-center mb-4">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-building-fill me-2"></i>
@@ -182,7 +96,7 @@ $companies = $manager->getAllCompanies();
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
-                        <span class="ms-2">Admin</span>
+                        <span class="profile-name"><?php echo htmlspecialchars($adminName); ?></span>
                     </div>
                 </div>
 
@@ -191,10 +105,9 @@ $companies = $manager->getAllCompanies();
                     <table id="companiesTable" class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Company Name</th>
-                                <th>Contact Person</th>
+                                <th>Company</th>
                                 <th>Contact Info</th>
-                                <th>Location</th>
+                                <th>Open Positions</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -204,30 +117,34 @@ $companies = $manager->getAllCompanies();
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <img src="<?php echo htmlspecialchars('../Backend/Core/get_company_logo.php?id=' . $company['id']); ?>" 
+                                            <img src="<?php echo htmlspecialchars('../Backend/Core/get_company_logo.php?id=' . $company['id']); ?>"
                                                  alt="Company Logo"
                                                  class="company-logo me-2"
-                                                 class="company-logo-small">
+                                                 style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
                                             <div>
-                                                <?php echo htmlspecialchars($company['name']); ?>
+                                                <strong><?php echo htmlspecialchars($company['name']); ?></strong>
+                                                <div class="small text-muted"><?php echo htmlspecialchars($company['address']); ?></div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td><?php echo htmlspecialchars($company['contact_person'] ?? 'N/A'); ?></td>
                                     <td>
-                                        <div><?php echo htmlspecialchars($company['contact_email'] ?? 'N/A'); ?></div>
-                                        <div><?php echo htmlspecialchars($company['contact_phone'] ?? 'N/A'); ?></div>
+                                        <div><i class="bi bi-person"></i> <?php echo htmlspecialchars($company['contact_person'] ?? 'N/A'); ?></div>
+                                        <div><i class="bi bi-envelope"></i> <?php echo htmlspecialchars($company['contact_email'] ?? 'N/A'); ?></div>
                                     </td>
-                                    <td><?php echo htmlspecialchars($company['address']); ?></td>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            <?php echo $company['open_positions'] . ' position' . ($company['open_positions'] != 1 ? 's' : ''); ?>
+                                        </span>
+                                    </td>
                                     <td>
                                         <span class="badge bg-<?php echo $company['status'] === 'active' ? 'success' : 'danger'; ?>">
                                             <?php echo ucfirst($company['status']); ?>
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary me-2 edit-btn" 
+                                        <button class="btn btn-sm btn-outline-primary me-2 edit-btn"
                                                 data-id="<?php echo $company['id']; ?>"
-                                                data-bs-toggle="modal" 
+                                                data-bs-toggle="modal"
                                                 data-bs-target="#editCompanyModal">
                                             <i class="bi bi-pencil"></i>
                                         </button>
@@ -240,13 +157,12 @@ $companies = $manager->getAllCompanies();
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                </div>
-
-                <!-- Add New Company Button -->
+                     <!-- Add New Company Button -->
                 <div class="add-button-container">
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCompanyModal">
                         <i class="bi bi-plus-circle"></i> Add New Company
                     </button>
+                </div>
                 </div>
             </div>
         </div>
@@ -266,22 +182,22 @@ $companies = $manager->getAllCompanies();
                             <label class="form-label">Company Name</label>
                             <input type="text" class="form-control" name="name" required>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Contact Person</label>
                                 <input type="text" class="form-control" name="contact_person">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Contact Phone</label>
                                 <input type="tel" class="form-control" name="contact_phone">
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Contact Email</label>
                                 <input type="email" class="form-control" name="contact_email">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Website</label>
                                 <input type="url" class="form-control" name="website" placeholder="https://">
                             </div>
@@ -326,27 +242,27 @@ $companies = $manager->getAllCompanies();
                 </div>
                 <div class="modal-body">
                     <form id="editCompanyForm">
-                        <input type="hidden" name="id" value="">
+                        <input type="hidden" name="id">
                         <div class="mb-3">
                             <label class="form-label">Company Name</label>
                             <input type="text" class="form-control" name="name" required>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Contact Person</label>
                                 <input type="text" class="form-control" name="contact_person">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Contact Phone</label>
                                 <input type="tel" class="form-control" name="contact_phone">
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Contact Email</label>
                                 <input type="email" class="form-control" name="contact_email">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6">
                                 <label class="form-label">Website</label>
                                 <input type="url" class="form-control" name="website" placeholder="https://">
                             </div>
@@ -362,7 +278,6 @@ $companies = $manager->getAllCompanies();
                         <div class="mb-3">
                             <label class="form-label">Company Logo</label>
                             <input type="file" class="form-control" name="logo" accept="image/*">
-                            <input type="hidden" name="current_logo">
                             <small class="form-text text-muted">Leave empty to keep current logo</small>
                             <div id="currentLogoPreview" class="mt-2"></div>
                         </div>
@@ -388,8 +303,6 @@ $companies = $manager->getAllCompanies();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <!-- Add SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/admin.js"></script>
     <script>
@@ -398,7 +311,7 @@ $companies = $manager->getAllCompanies();
             if ($.fn.DataTable.isDataTable('#companiesTable')) {
                 $('#companiesTable').DataTable().destroy();
             }
-            
+
             $('#companiesTable').DataTable({
                 pageLength: 10,
                 language: {

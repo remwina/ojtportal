@@ -42,6 +42,10 @@ class Auth {
         return $_SESSION['usertype'] ?? null;
     }
 
+    public function name() {
+        return $_SESSION['admin_name'] ?? 'Admin';
+    }
+
     public function logout() {
         TokenHandler::removeToken();
         session_unset();

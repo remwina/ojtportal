@@ -754,7 +754,7 @@ body {
     margin-left: 0.5rem;
 }
 
-/* Add Button Positioning */
+/* Add Button Container */
 .add-button-container {
     display: flex;
     justify-content: flex-end;
@@ -763,6 +763,18 @@ body {
     background: var(--pure-white);
     border-radius: 0 0 8px 8px;
     border-top: 1px solid #dee2e6;
+}
+
+.add-button-container .btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.add-button-container i {
+    font-size: 1.1rem;
 }
 
 /* Additional margin utilities */
