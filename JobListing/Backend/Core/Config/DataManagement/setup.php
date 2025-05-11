@@ -626,8 +626,14 @@ $setupManager->handleSetup();
             </div>
 
             <div class="text-center">
-                <a href="../../../../Frontend/login.html" class="setup-btn">Go to Login Page</a>
+                <button id="goToLoginBtn" class="setup-btn">Go to Login Page</button>
             </div>
+
+            <script>
+                document.getElementById('goToLoginBtn').addEventListener('click', function() {
+                    window.location.href = '../../../../Frontend/login.html';
+                });
+            </script>
         </div>
     </div>
 

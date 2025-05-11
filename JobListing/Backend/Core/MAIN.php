@@ -8,6 +8,16 @@ ini_set('error_log', __DIR__ . '/error.log');
 ini_set('default_charset', 'UTF-8');
 mb_internal_encoding('UTF-8');
 
+// Ensure clean output
+if (ob_get_level()) ob_end_clean();
+ob_start();
+
+// Set error handler to prevent any output
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("Error: [$errno] $errstr in $errfile on line $errline");
+    return true;
+});
+
 // Set UTF-8 headers
 header('Content-Type: application/json; charset=utf-8');
 
@@ -148,7 +158,8 @@ try {
             
             $response = [
                 'success' => true,
-                'isAdmin' => isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'admin'
+                'isAdmin' => isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'admin',
+                'isSuperAdmin' => isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin']
             ];
             break;
 
@@ -754,17 +765,66 @@ try {
             if (!isset($_POST['id'], $_POST['status'])) {
                 throw new Exception("Missing required fields");
             }
+            if (!isset($_SESSION['admin_id'])) {
+                throw new Exception("Unauthorized access");
+            }
+            
+            // Get user details first
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
-            $stmt = $conn->prepare("UPDATE users SET status = ? WHERE id = ?");
+            $stmt = $conn->prepare("SELECT usertype, firstname, lastname, status FROM users WHERE id = ?");
+            $stmt->bind_param("i", $_POST['id']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $userDetails = $result->fetch_assoc();
+            
+            if (!$userDetails) {
+                throw new Exception("User not found");
+            }
+
+            // Prevent admin from deactivating themselves
+            if ($_POST['id'] == $_SESSION['admin_id'] && $_POST['status'] === 'inactive') {
+                throw new Exception("For security reasons, you cannot deactivate your own account. This ensures there is always at least one active administrator. Please contact another administrator if you need to deactivate this account.");
+            }
+
+            // Prevent deactivation of other admins if not super admin
+            if ($userDetails['usertype'] === 'admin' && $_POST['status'] === 'inactive') {
+                if (!isset($_SESSION['is_super_admin']) || !$_SESSION['is_super_admin']) {
+                    throw new Exception("Only super administrators can deactivate admin accounts");
+                }
+            }
+            
+            // Prevent last admin from being deactivated
+            if ($userDetails['usertype'] === 'admin' && $_POST['status'] === 'inactive') {
+                $activeAdminsStmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE usertype = 'admin' AND status = 'active' AND id != ?");
+                $activeAdminsStmt->bind_param("i", $_POST['id']);
+                $activeAdminsStmt->execute();
+                $activeAdminsCount = $activeAdminsStmt->get_result()->fetch_assoc()['count'];
+                
+                if ($activeAdminsCount === 0) {
+                    throw new Exception("Cannot deactivate the last active administrator account. At least one administrator must remain active.");
+                }
+            }
+
+            // Check if we're trying to change to the same status
+            if ($userDetails['status'] === $_POST['status']) {
+                throw new Exception("User account is already " . $_POST['status']);
+            }
+
+            $stmt = $conn->prepare("UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
             $stmt->bind_param("si", $_POST['status'], $_POST['id']);
             $result = $stmt->execute();
+            
             if (!$result) {
-                error_log("Failed to update user status: " . $conn->error);
+                throw new Exception("Failed to update user status: " . $conn->error);
             }
+
+            $statusText = $_POST['status'] === 'inactive' ? 'deactivated' : 'activated';
+            $userName = $userDetails['firstname'] . ' ' . $userDetails['lastname'];
+            
             $response = [
-                'success' => $result,
-                'message' => $result ? 'User status updated successfully' : 'Failed to update user status'
+                'success' => true,
+                'message' => 'User ' . $userName . ' has been ' . $statusText . ' successfully'
             ];
             break;
 
@@ -842,6 +902,71 @@ try {
             ];
             break;
 
+        case 'toggleSuperAdmin':
+            if (!isset($_SESSION['admin_id'])) {
+                throw new Exception("Unauthorized access");
+            }
+
+            if (!isset($_POST['id'])) {
+                throw new Exception("Admin ID is required");
+            }
+
+            require_once __DIR__ . '/../../Admin/Admins.php';
+            $adminManager = new AdminsManager();
+
+            if (!$adminManager->canCreateAdmin($_SESSION['admin_id'])) {
+                throw new Exception("Only super administrators can modify admin privileges");
+            }
+
+            if ($adminManager->toggleSuperAdmin($_POST['id'])) {
+                $response = [
+                    'success' => true,
+                    'message' => 'Administrator privileges updated successfully'
+                ];
+            } else {
+                throw new Exception("Failed to update administrator privileges");
+            }
+            break;
+
+        case 'addAdmin':
+            if (!isset($_SESSION['admin_id'])) {
+                throw new Exception("Unauthorized access");
+            }
+
+            require_once __DIR__ . '/../../Admin/Admins.php';
+            $adminManager = new AdminsManager();
+
+            if (!$adminManager->canCreateAdmin($_SESSION['admin_id'])) {
+                throw new Exception("Only super administrators can create admin accounts");
+            }
+
+            // Validate required fields
+            $requiredFields = ['srcode', 'name', 'email', 'password', 'confirm_password'];
+            foreach ($requiredFields as $field) {
+                if (!isset($_POST[$field]) || trim($_POST[$field]) === '') {
+                    throw new Exception("$field is required");
+                }
+            }
+
+            // Validate password
+            $validator = new Validators();
+            $validator->isValidPassword($_POST['password'], $_POST['confirm_password']);
+            $validationResult = $validator->getErrors();
+            if (!$validationResult['success']) {
+                throw new Exception($validationResult['errors'][0]['message']);
+            }
+
+            $adminData = [
+                'srcode' => $_POST['srcode'],
+                'name' => $_POST['name'],
+                'email' => $_POST['email'],
+                'password' => $_POST['password'],
+                'is_super_admin' => isset($_POST['is_super_admin']) && $_POST['is_super_admin'] === '1' ? 1 : 0
+            ];
+
+            $response = $adminManager->createAdmin($adminData);
+            break;
+
         default:
             throw new Exception("Invalid action: " . $action);
     }
@@ -863,19 +988,45 @@ try {
         $response['csrf_token'] = TokenHandler::generateToken();
     }
 
-    echo json_encode($response, JSON_THROW_ON_ERROR);
+    // Clean any output buffers
+while (ob_get_level()) ob_end_clean();
+ob_start();
+
+// Ensure headers
+header('Content-Type: application/json; charset=utf-8');
+
+echo json_encode($response, JSON_THROW_ON_ERROR);
+ob_end_flush();
 
 } catch (Exception $e) {
     error_log($e->getMessage());
     http_response_code(400);
+    
+    // Clean any output buffers
+    while (ob_get_level()) ob_end_clean();
+    ob_start();
+    
+    // Ensure headers
+    header('Content-Type: application/json; charset=utf-8');
+    
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage()
     ], JSON_THROW_ON_ERROR);
+    
+    ob_end_flush();
     exit();
 } catch (Throwable $e) {
     error_log($e->getMessage());
     http_response_code(500);
+    
+    // Clean any output buffers
+    while (ob_get_level()) ob_end_clean();
+    ob_start();
+    
+    // Ensure headers
+    header('Content-Type: application/json; charset=utf-8');
+    
     echo json_encode([
         'success' => false,
         'message' => "Server error occurred. Please try again."

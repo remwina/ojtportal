@@ -10,6 +10,180 @@ document.addEventListener('DOMContentLoaded', async function() {
             throw new Error('Failed to initialize CSRF token');
         }
 
+        // Handle toggle super admin functionality
+        document.querySelectorAll('.toggle-super-btn').forEach(button => {
+            button.addEventListener('click', async function() {
+                const id = this.dataset.id;
+                const isSuper = this.dataset.isSuper === '1';
+                
+                try {
+                    // Confirm action
+                    const result = await Swal.fire({
+                        title: isSuper ? 'Remove Super Admin?' : 'Make Super Admin?',
+                        html: isSuper ? 
+                            'Are you sure you want to remove super admin privileges?<br><br>' +
+                            '<strong>Effects:</strong><br>' +
+                            '• Admin will lose access to administrator management<br>' +
+                            '• Admin will lose ability to modify other admin accounts<br>' +
+                            '• Current admin sessions will be unaffected<br><br>' +
+                            '<strong>Note:</strong><br>' +
+                            '• This action can be reversed<br>' +
+                            '• Cannot remove privileges from the last super admin' :
+                            'Are you sure you want to grant super admin privileges?<br><br>' +
+                            '<strong>Effects:</strong><br>' +
+                            '• Admin will gain access to administrator management<br>' +
+                            '• Admin will be able to modify other admin accounts<br>' +
+                            '• Admin will be able to create new admin accounts',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: isSuper ? '#dc3545' : '#28a745',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: isSuper ? 'Yes, remove privileges' : 'Yes, grant privileges',
+                        cancelButtonText: 'Cancel'
+                    });
+
+                    if (result.isConfirmed) {
+                        // Show loading state
+                        this.disabled = true;
+
+                        // Get fresh CSRF token
+                        const token = await CSRFManager.ensureValidToken();
+                        
+                        const formData = new FormData();
+                        formData.append('action', 'toggleSuperAdmin');
+                        formData.append('id', id);
+                        formData.append('csrf_token', token);
+
+                        const response = await fetch('../Backend/Core/MAIN.php', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Csrf-Token': token,
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            await Swal.fire({
+                                title: 'Success!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonColor: '#28a745'
+                            });
+                            location.reload();
+                        } else {
+                            throw new Error(data.message || 'Failed to update administrator privileges');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    await Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'An error occurred while updating administrator privileges',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
+                } finally {
+                    this.disabled = false;
+                }
+            });
+        });
+
+        // Handle department and course selection for admin registration
+        const departmentSelect = document.getElementById('department');
+        const courseSelect = document.getElementById('course');
+
+        if (departmentSelect && courseSelect) {
+            // Load departments
+            const token = await CSRFManager.ensureValidToken();
+            const deptResponse = await fetch('../Backend/Core/MAIN.php?action=getDepartments', {
+                headers: {
+                    'X-Csrf-Token': token
+                }
+            });
+            const deptData = await deptResponse.json();
+
+            if (deptData.success) {
+                deptData.departments.forEach(dept => {
+                    const option = new Option(dept.name, dept.id);
+                    departmentSelect.add(option);
+                });
+            }
+
+            // Handle department change
+            departmentSelect.addEventListener('change', async function() {
+                courseSelect.innerHTML = '<option value="">Select Course</option>';
+                if (!this.value) return;
+
+                const token = await CSRFManager.ensureValidToken();
+                const courseResponse = await fetch(`../Backend/Core/MAIN.php?action=getCourses&department_id=${this.value}`, {
+                    headers: {
+                        'X-Csrf-Token': token
+                    }
+                });
+                const courseData = await courseResponse.json();
+
+                if (courseData.success) {
+                    courseData.courses.forEach(course => {
+                        const option = new Option(course.name, course.id);
+                        courseSelect.add(option);
+                    });
+                }
+            });
+        }
+
+        // Handle admin form submission
+        const addAdminForm = document.getElementById('addAdminForm');
+        if (addAdminForm) {
+            document.getElementById('saveAdminBtn').addEventListener('click', async function() {
+                if (addAdminForm.checkValidity()) {
+                    try {
+                        const token = await CSRFManager.ensureValidToken();
+                        const formData = new FormData(addAdminForm);
+                        formData.append('csrf_token', token);
+                        formData.append('is_super_admin', document.getElementById('is_super_admin').checked ? '1' : '0');
+
+                        // Ensure name has value
+                        const name = formData.get('name');
+                        if (!name) {
+                            throw new Error('Full name is required');
+                        }
+
+                        const response = await fetch('../Backend/Core/MAIN.php', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Csrf-Token': token
+                            }
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            await Swal.fire({
+                                title: 'Success!',
+                                text: 'Administrator account created successfully',
+                                icon: 'success'
+                            });
+                            location.reload();
+                        } else {
+                            throw new Error(data.message || 'Failed to create administrator account');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        await Swal.fire({
+                            title: 'Error!',
+                            text: error.message || 'Failed to create administrator account',
+                            icon: 'error'
+                        });
+                    }
+                } else {
+                    addAdminForm.reportValidity();
+                }
+            });
+        }
+
         // Initialize DataTables
         const tables = {};
         
@@ -685,9 +859,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 try {
                     const result = await Swal.fire({
                         title: isDeactivate ? 'Deactivate User?' : 'Activate User?',
-                        text: isDeactivate ? 
-                            'Are you sure you want to deactivate this user? They will not be able to log in.' :
-                            'Are you sure you want to activate this user? They will be able to log in again.',
+                        html: isDeactivate ? 
+                            'Are you sure you want to deactivate this user?<br><br>' +
+                            '<strong>Effects of deactivation:</strong><br>' +
+                            '• User will be immediately logged out<br>' +
+                            '• User will not be able to log in<br>' +
+                            '• All active sessions will be terminated<br>' +
+                            '• Any active job applications will remain in the system<br>' +
+                            '• User data will be preserved<br><br>' +
+                            '<strong>Note:</strong><br>' +
+                            '• This action can be reversed by reactivating the account<br>' +
+                            '• You cannot deactivate your own account<br>' +
+                            '• The system must maintain at least one active administrator' :
+                            'Are you sure you want to activate this user?<br><br>' +
+                            '<strong>Effects of activation:</strong><br>' +
+                            '• User will be able to log in immediately<br>' +
+                            '• User will regain access to their account and data<br>' +
+                            '• All previous activities and records will be accessible',
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: isDeactivate ? '#dc3545' : '#28a745',
@@ -711,7 +899,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                         const response = await fetch('../Backend/Core/MAIN.php', {
                             method: 'POST',
-                            body: formData
+                            body: formData,
+                            headers: {
+                                'X-Csrf-Token': token,
+                                'Accept': 'application/json'
+                            }
                         });
 
                         const data = await response.json();
@@ -719,20 +911,37 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (data.success) {
                             await Swal.fire({
                                 title: 'Success!',
-                                text: `User has been ${isDeactivate ? 'deactivated' : 'activated'} successfully.`,
+                                text: data.message,
                                 icon: 'success',
                                 confirmButtonColor: '#28a745'
                             });
                             location.reload();
                         } else {
-                            throw new Error(data.message || 'Failed to update user status');
+                            // Handle specific error cases
+                            let errorTitle = 'Error!';
+                            let errorIcon = 'error';
+                            let confirmButtonColor = '#dc3545';
+
+                            // Check if it's a self-deactivation attempt
+                            if (data.message && data.message.includes("cannot deactivate your own account")) {
+                                errorTitle = 'Action Not Allowed';
+                                errorIcon = 'warning';
+                                confirmButtonColor = '#ffc107';
+                            }
+
+                            await Swal.fire({
+                                title: errorTitle,
+                                text: data.message,
+                                icon: errorIcon,
+                                confirmButtonColor: confirmButtonColor
+                            });
                         }
                     }
                 } catch (error) {
                     console.error('Error:', error);
                     await Swal.fire({
-                        title: 'Error!',
-                        text: error.message || 'A server error occurred while updating user status',
+                        title: 'System Error',
+                        text: 'An unexpected error occurred while updating the user status. Please try again.',
                         icon: 'error',
                         confirmButtonColor: '#dc3545'
                     });

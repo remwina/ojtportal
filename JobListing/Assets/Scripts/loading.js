@@ -1,31 +1,37 @@
 async function checkAdminAuth() {
+    // Only check admin auth if we're on an admin page
+    const isAdminPage = window.location.pathname.includes('/Admin/');
+    if (!isAdminPage) {
+        return true; // Skip check for non-admin pages
+    }
+
     try {
         const response = await fetch('../Backend/Core/MAIN.php?action=checkAdmin');
         const data = await response.json();
         
         if (!data.isAdmin) {
-            await swal({
+            await Swal.fire({
                 title: "Access Denied!",
                 text: "You must be logged in as an administrator to access this page.",
                 icon: "error",
-                button: "Return to Login",
-                closeOnClickOutside: false,
-                closeOnEsc: false
+                confirmButtonText: "Return to Login",
+                allowOutsideClick: false,
+                allowEscapeKey: false
             });
-            window.location.href = '../Frontend/login.html';
+            window.location.href = '../../Frontend/login.html';
             return false;
         }
         return true;
     } catch (error) {
-        await swal({
+        await Swal.fire({
             title: "Authentication Error",
             text: "Please log in again.",
             icon: "error",
-            button: false,
-            closeOnClickOutside: false,
-            closeOnEsc: false
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false
         });
-        window.location.href = '../Frontend/login.html';
+        window.location.href = '../../Frontend/login.html';
         return false;
     }
 }
@@ -39,11 +45,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         element.style.display = 'block';
         element.className = 'status-message ' + (isError ? 'error' : 'success');
 
-        await swal({
+        await Swal.fire({
             title: isError ? "Error!" : "Success!",
             text: message,
             icon: isError ? "error" : "success",
-            button: "Continue"
+            confirmButtonText: "Continue"
         });
     }
 

@@ -15,8 +15,8 @@ if (!$auth->check()) {
     exit();
 }
 
-// Get admin name from session (stored as student_name during login)
-$adminName = isset($_SESSION['student_name']) ? $_SESSION['student_name'] : 'Admin';
+// Get admin name from session
+$adminName = isset($_SESSION['admin_name']) ? $_SESSION['admin_name'] : 'Admin';
 
 
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
@@ -35,6 +35,7 @@ class UsersManager {
                                     FROM users u 
                                     LEFT JOIN courses c ON u.course_id = c.id 
                                     LEFT JOIN departments d ON c.department_id = d.id 
+                                    WHERE u.usertype != 'admin'
                                     ORDER BY u.created_at DESC");
         return $result->fetch_all(MYSQLI_ASSOC);
     }
@@ -88,6 +89,11 @@ $users = $manager->getAllUsers();
                     <a href="Users.php" class="nav-link active">
                         <i class="bi bi-people-fill"></i> Users
                     </a>
+                    <?php if (isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin']): ?>
+                    <a href="Admins.php" class="nav-link">
+                        <i class="bi bi-shield-fill"></i> Administrators
+                    </a>
+                    <?php endif; ?>
                     <a href="logout.php" class="nav-link">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>

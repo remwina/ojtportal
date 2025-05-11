@@ -30,7 +30,7 @@ DELIMITER $$
 CREATE PROCEDURE sp_authenticate_user(IN p_email VARCHAR(255))
 BEGIN
     SELECT u.id, u.srcode, u.firstname, u.lastname, u.email, u.password, 
-           u.usertype, u.status, u.course_id, u.section 
+           u.usertype, u.status, u.course_id, u.section, u.is_super_admin
     FROM users u 
     WHERE u.email = p_email 
     AND u.status = 'active' 

@@ -13,7 +13,7 @@ if (!$auth->check()) {
     exit();
 }
 
-$adminName = isset($_SESSION['student_name']) ? $_SESSION['student_name'] : 'Admin';
+$adminName = isset($_SESSION['admin_name']) ? $_SESSION['admin_name'] : 'Admin';
 
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
@@ -80,6 +80,11 @@ $companies = $manager->getAllCompanies();
                     <a href="Users.php" class="nav-link">
                         <i class="bi bi-people-fill"></i> Users
                     </a>
+                    <?php if (isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin']): ?>
+                    <a href="Admins.php" class="nav-link">
+                        <i class="bi bi-shield-fill"></i> Administrators
+                    </a>
+                    <?php endif; ?>
                     <a href="logout.php" class="nav-link">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>
@@ -88,15 +93,15 @@ $companies = $manager->getAllCompanies();
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Section Header -->
+                <!-- Section Header with Profile -->
                 <div class="section-header d-flex justify-content-between align-items-center mb-4">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-building-fill me-2"></i>
-                        <h4 class="mb-0">Partner Companies Management</h4>
+                        <h4 class="mb-0">Companies Management</h4>
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
-                        <span class="profile-name"><?php echo htmlspecialchars($adminName); ?></span>
+                        <span class="ms-2"><?php echo htmlspecialchars(isset($_SESSION['admin_name']) ? $_SESSION['admin_name'] : 'Admin'); ?></span>
                     </div>
                 </div>
 

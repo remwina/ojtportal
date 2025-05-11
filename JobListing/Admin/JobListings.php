@@ -125,9 +125,7 @@ class JobListingsManager
 
         if ($count > 0) {
             throw new Exception("Cannot delete job listing that has applications");
-        }
-
-        // If no applications, proceed with deletion
+        }        // If no applications, proceed with deletion
         $stmt = $this->conn->prepare("DELETE FROM job_listings WHERE id = ?");
         if (!$stmt) {
             throw new Exception("Error preparing delete statement: " . $this->conn->error);
@@ -200,10 +198,14 @@ $companies = $manager->getAllCompanies();
                     </a>
                     <a href="Companies.php" class="nav-link">
                         <i class="bi bi-building-fill"></i> Companies
-                    </a>
-                    <a href="Users.php" class="nav-link">
+                    </a>                    <a href="Users.php" class="nav-link">
                         <i class="bi bi-people-fill"></i> Users
                     </a>
+                    <?php if (isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin']): ?>
+                    <a href="Admins.php" class="nav-link">
+                        <i class="bi bi-shield-fill"></i> Administrators
+                    </a>
+                    <?php endif; ?>
                     <a href="logout.php" class="nav-link">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>
@@ -220,7 +222,7 @@ $companies = $manager->getAllCompanies();
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
-                        <span class="ms-2">Admin</span>
+                        <span class="ms-2"><?php echo htmlspecialchars(isset($_SESSION['admin_name']) ? $_SESSION['admin_name'] : 'Admin'); ?></span>
                     </div>
                 </div> <!-- Job Listings Table -->
                 <div class="table-responsive">

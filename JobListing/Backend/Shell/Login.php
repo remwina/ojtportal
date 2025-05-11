@@ -17,75 +17,88 @@ class Login {
 
     public function loginUser($email, $password) {
         try {
-            // Start session if not already started
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
             }
 
-            // Validate input first
-            $this->validator->isValidEmail($email);
-            $this->validator->isValidLoginPassword($password);
-
-            $validationResult = $this->validator->getErrors();
-            if (!$validationResult['success']) {
-                return $validationResult;
+            // Basic validation first
+            if (empty($email) || empty($password)) {
+                return [
+                    'success' => false,
+                    'errors' => [
+                        ['field' => empty($email) ? 'email' : 'password', 
+                         'message' => 'This field is required']
+                    ]
+                ];
             }
 
-            // First check if user exists and is active
-            $user = $this->db->authenticate($email);
+            // First check administrators table
+            $adminStmt = $this->conn->prepare("SELECT * FROM administrators WHERE email = ?");
+            $adminStmt->bind_param("s", $email);
+            $adminStmt->execute();
+            $user = $adminStmt->get_result()->fetch_assoc();
+            $isAdmin = true;
+
+            // If not found in administrators, check users table
+            if (!$user) {
+                $isAdmin = false;
+                $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = ?");
+                $stmt->bind_param("s", $email);
+                $stmt->execute();
+                $user = $stmt->get_result()->fetch_assoc();
+            }
             
+            // Validate credentials with more specific error messages first
             if (!$user) {
                 return [
                     'success' => false,
+                    'error_type' => 'email_not_found',
                     'errors' => [
-                        ['field' => 'email', 'message' => 'Invalid email or password']
+                        ['field' => 'email', 'message' => 'No account found with this email address']
                     ]
                 ];
             }
 
-            // Then verify password
             if (!password_verify($password, $user['password'])) {
                 return [
                     'success' => false,
+                    'error_type' => 'invalid_password',
                     'errors' => [
-                        ['field' => 'password', 'message' => 'Invalid email or password']
+                        ['field' => 'password', 'message' => 'Incorrect password']
                     ]
                 ];
             }
 
-            // Check account status
+            // Only check for deactivation after credentials are validated
             if ($user['status'] === 'inactive') {
                 return [
                     'success' => false,
-                    'message' => 'Your account has been deactivated. Please contact the administrator.'
+                    'isDeactivated' => true
                 ];
             }
-            
-            // Set all necessary session variables
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['student_id'] = $user['id'];
-            $_SESSION['usertype'] = $user['usertype'];
-            $_SESSION['srcode'] = $user['srcode'];
-            $_SESSION['student_name'] = $user['firstname'] . ' ' . $user['lastname'];
-            $_SESSION['email'] = $user['email'];
-            $_SESSION['course_id'] = $user['course_id'];
-            $_SESSION['section'] = $user['section'];
-            
-            // Set admin_id for admin users
-            if ($user['usertype'] === 'admin') {
+
+            // Set session variables
+            if ($isAdmin) {
                 $_SESSION['admin_id'] = $user['id'];
+                $_SESSION['srcode'] = $user['srcode'];
+                $_SESSION['admin_name'] = $user['name'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['is_super_admin'] = $user['is_super_admin'] ? true : false;
+                $_SESSION['usertype'] = 'admin';
+            } else {
+                $_SESSION['student_id'] = $user['id'];
+                $_SESSION['usertype'] = $user['usertype'];
+                $_SESSION['srcode'] = $user['srcode'];
+                $_SESSION['student_name'] = $user['firstname'] . ' ' . $user['lastname'];
+                $_SESSION['email'] = $user['email'];
+                $_SESSION['course_id'] = $user['course_id'];
+                $_SESSION['section'] = $user['section'];
             }
-            
-            // Determine redirect based on user type
-            $redirect = $user['usertype'] === 'admin' ? 
-                       '../Admin/Dashboard.php' : 
-                       '../Dashboard/dashboard.php';
-            
+
             return [
                 'success' => true,
-                'message' => 'Login successful',
-                'usertype' => $user['usertype'],
-                'redirect' => $redirect
+                'usertype' => $isAdmin ? 'admin' : $user['usertype'],
+                'redirect' => $isAdmin ? '../Admin/Dashboard.php' : '../Dashboard/dashboard.php'
             ];
 
         } catch (Exception $e) {

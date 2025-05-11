@@ -26,13 +26,31 @@ class Validators {
 
     public function isValidUsertype($usertype) {
         $this->errors = [];
-        $validTypes = ['admin', 'user', 'none'];
+        $validTypes = ['user', 'none']; // Remove admin from default valid types
 
+        // If trying to register as admin
+        if (strtolower($usertype) === 'admin') {
+            require_once __DIR__ . '/../../Admin/Admins.php';
+            
+            // Skip validation for initial admin setup if no admins exist
+            $adminManager = new AdminsManager();
+            $hasExistingAdmins = count($adminManager->getSuperAdmins()) > 0;
+            
+            if ($hasExistingAdmins && !$adminManager->canCreateAdmin($_SESSION['admin_id'] ?? 0)) {
+                $this->errors[] = ["field" => "usertype", "message" => "Only super administrators can create admin accounts"];
+                $this->addToCollectedErrors();
+                return false;
+            }
+            return true; // Admin registration authorized
+        }
+
+        // Normal user type validation
         if (empty($usertype) || $usertype === 'none') {
             $this->errors[] = ["field" => "usertype", "message" => "Please select a user type"];
         } elseif (!in_array(strtolower($usertype), $validTypes)) {
             $this->errors[] = ["field" => "usertype", "message" => "Invalid user type selected"];
         }
+        
         $this->addToCollectedErrors();
         return empty($this->errors);
     }

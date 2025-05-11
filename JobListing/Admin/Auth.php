@@ -30,6 +30,21 @@ class Auth {
             return false;
         }
         
+        // Check if admin is still active in database
+        require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
+        $dbOps = new SQL_Operations();
+        $conn = $dbOps->getConnection();
+        
+        $stmt = $conn->prepare("SELECT status FROM administrators WHERE id = ? AND status = 'active'");
+        $stmt->bind_param("i", $_SESSION['admin_id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $this->logout();
+            return false;
+        }
+        
         // Initialize CSRF token if not present
         if (!isset($_SESSION['csrf_token'])) {
             TokenHandler::generateToken();
@@ -39,7 +54,7 @@ class Auth {
     }
 
     public function usertype() {
-        return $_SESSION['usertype'] ?? null;
+        return isset($_SESSION['admin_id']) ? 'admin' : null;
     }
 
     public function name() {

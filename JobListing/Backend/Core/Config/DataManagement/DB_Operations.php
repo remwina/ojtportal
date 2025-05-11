@@ -23,7 +23,7 @@ class SQL_Operations {
     public function authenticate($email) {
         $conn = $this->getConnection();
         $sql = "SELECT u.id, u.srcode, u.firstname, u.lastname, u.email, u.password, u.usertype, u.status, u.course_id, u.section 
-                FROM users u WHERE u.email = ? AND u.status = 'active' LIMIT 1";
+                FROM users u WHERE u.email = ? LIMIT 1";
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -59,13 +59,27 @@ class SQL_Operations {
                 }
             }
 
-            $stmt = $conn->prepare("INSERT INTO users (srcode, firstname, lastname, email, password, course_id, section, usertype, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            // Additional validation for admin creation only if admins already exist
+            if (strtolower($userData['usertype']) === 'admin') {
+                // Special case for initial setup - skip admin validation
+                $firstTimeSetup = !$this->checkExists('users', ['usertype' => 'admin']);
+                if (!$firstTimeSetup) {
+                    require_once __DIR__ . '/../../../../Admin/Admins.php';
+                    $adminManager = new AdminsManager();
+                    if (!$adminManager->canCreateAdmin($_SESSION['admin_id'] ?? 0)) {
+                        throw new Exception("Only super administrators can create admin accounts");
+                    }
+                }
+            }
+
+            $stmt = $conn->prepare("INSERT INTO users (srcode, firstname, lastname, email, password, course_id, section, usertype, status, is_super_admin) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             if (!$stmt) {
                 throw new Exception("Failed to prepare user creation query");
             }
 
             $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
-            $stmt->bind_param('sssssisss', 
+            $isSuperAdmin = isset($userData['is_super_admin']) ? 1 : 0;
+            $stmt->bind_param('sssssisssi', 
                 $userData['srcode'],
                 $userData['firstname'],
                 $userData['lastname'],
@@ -74,7 +88,8 @@ class SQL_Operations {
                 $userData['course'],
                 $userData['section'],
                 $userData['usertype'],
-                $userData['status']
+                $userData['status'],
+                $isSuperAdmin
             );
 
             if (!$stmt->execute()) {
@@ -127,11 +142,6 @@ class SQL_Operations {
         try {
             $conn = $this->getConnection();
             DatabaseSchema::initializeDatabase($conn);
-            
-            if (!$this->checkEmailExists('admin@admin.com')) {
-                $this->createUser(DatabaseSchema::getDefaultAdmin());
-            }
-            
             return ["success" => true, "message" => "Database initialized successfully"];
         } catch (Exception $e) {
             throw new Exception("Database initialization failed: " . $e->getMessage());
@@ -142,11 +152,6 @@ class SQL_Operations {
         try {
             $conn = $this->getConnection();
             DatabaseSchema::resetDatabase($conn);
-            
-            if (!$this->checkEmailExists('admin@admin.com')) {
-                $this->createUser(DatabaseSchema::getDefaultAdmin());
-            }
-            
             return ["success" => true, "message" => "Database reset successfully"];
         } catch (Exception $e) {
             throw new Exception("Database reset failed: " . $e->getMessage());

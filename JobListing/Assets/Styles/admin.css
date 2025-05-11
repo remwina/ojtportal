@@ -82,6 +82,7 @@ body {
 
 .nav-link i {
     font-size: 1.2rem;
+    color: #ffffff; /* Explicitly set icon color to white */
 }
 
 .nav-link:hover {

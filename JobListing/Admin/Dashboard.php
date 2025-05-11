@@ -134,6 +134,11 @@ $stats = $dashboard->getStats();// You can replace this with dynamic admin name 
                     <a href="Users.php" class="nav-link">
                         <i class="bi bi-people-fill"></i> Users
                     </a>
+                    <?php if (isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin']): ?>
+                    <a href="Admins.php" class="nav-link">
+                        <i class="bi bi-shield-fill"></i> Administrators
+                    </a>
+                    <?php endif; ?>
                     <a href="logout.php" class="nav-link">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>

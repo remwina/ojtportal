@@ -66,16 +66,7 @@
                 <form id="registerForm" class="auth-form">
                     <input type="hidden" name="action" value="register">
                     <input type="hidden" name="csrf_token" id="csrf_token">
-
-                    <div class="form-group">
-                        <label for="usertype">User Type</label>
-                        <select id="usertype" name="usertype">
-                            <option value="none">Select User Type</option>
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                        <div id="usertype-error" class="error-message"></div>
-                    </div>
+                    <input type="hidden" name="usertype" value="user">
 
                     <div class="form-group">
                         <label for="firstname">First Name</label>
@@ -87,6 +78,18 @@
                         <label for="lastname">Last Name</label>
                         <input type="text" id="lastname" name="lastname" placeholder="Enter your last name">
                         <div id="lastname-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="srcode">SR Code</label>
+                        <input type="text" id="srcode" name="srcode" placeholder="Enter SR Code (XX-XXXXX)" maxlength="8">
+                        <div id="srcode-error" class="error-message"></div>
+                    </div>
+
+                    <div class="form-group email-group">
+                        <label for="email">Email</label>
+                        <input type="text" id="email" name="email" placeholder="Enter your email" autocomplete="email">
+                        <div id="email-error" class="error-message"></div>
                     </div>
 
                     <div class="form-group">
@@ -111,25 +114,13 @@
                         <div id="section-error" class="error-message"></div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="srcode">SR Code</label>
-                        <input type="text" id="srcode" name="srcode" placeholder="Enter SR Code (XX-XXXXX)" maxlength="8">
-                        <div id="srcode-error" class="error-message"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="text" id="email" name="email" placeholder="Enter your email" autocomplete="email">
-                        <div id="email-error" class="error-message"></div>
-                    </div>
-
-                    <div class="form-group">
+                    <div class="form-group password-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="new-password">
                         <div id="password-error" class="error-message"></div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group password-group">
                         <label for="confirm_password">Confirm Password</label>
                         <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" autocomplete="new-password">
                         <div id="confirm_password-error" class="error-message"></div>
@@ -160,6 +151,19 @@
         document.addEventListener('DOMContentLoaded', async function() {
             await CSRFManager.init();
             CSRFManager.updateFormToken(document.getElementById('registerForm'));
+
+            // Check if user is logged in as super admin
+            const response = await fetch('../Backend/Core/MAIN.php?action=checkAdmin');
+            const data = await response.json();
+            const usertypeSelect = document.getElementById('usertype');
+            
+            // Only show admin option if user is a super admin
+            if (!data.isSuperAdmin) {
+                const adminOption = usertypeSelect.querySelector('option[value="admin"]');
+                if (adminOption) {
+                    adminOption.remove();
+                }
+            }
 
             const departmentSelect = document.getElementById('department');
             const courseSelect = document.getElementById('course');
@@ -228,7 +232,7 @@
                 document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
                 
                 // Basic validation
-                const requiredFields = ['usertype', 'firstname', 'lastname', 'department', 'course', 'section', 'srcode', 'email', 'password', 'confirm_password'];
+                const requiredFields = ['firstname', 'lastname', 'department', 'course', 'section', 'srcode', 'email', 'password', 'confirm_password'];
                 let hasErrors = false;
                 
                 requiredFields.forEach(field => {

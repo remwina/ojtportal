@@ -49,14 +49,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     }
                 }
             }
-        } else if (message.includes("deactivated")) {
-            // Special handling for deactivated account message
-            Swal.fire({
-                title: "Account Deactivated",
-                text: MESSAGES.ERROR.DEACTIVATED,
-                icon: "error",
-                confirmButtonText: "Contact Admin"
-            });
         } else {
             Swal.fire({
                 title: "Error!",
@@ -67,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    if (form) {
+    if (form && !form.id.includes('login')) {  // Skip login form
         form.addEventListener("submit", async function (e) {
             e.preventDefault();
             clearErrors();
@@ -118,14 +110,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                         window.location.href = data.redirect;
                     }
                 } else {
-                    if (data.message && data.message.includes("deactivated")) {
-                        await Swal.fire({
-                            title: "Account Deactivated",
-                            text: MESSAGES.ERROR.DEACTIVATED,
-                            icon: "error",
-                            confirmButtonText: "Contact Admin"
-                        });
-                    } else if (data.errors && Array.isArray(data.errors)) {
+                    if (data.errors && Array.isArray(data.errors)) {
                         data.errors.forEach(error => {
                             showError(error.field, error.message);
                         });

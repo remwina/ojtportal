@@ -51,6 +51,19 @@ class DatabaseSchema {
                 FOREIGN KEY (department_id) REFERENCES departments(id)
             )",
             
+            'administrators' => "CREATE TABLE IF NOT EXISTS administrators (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                srcode VARCHAR(9) UNIQUE NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                is_super_admin TINYINT(1) NOT NULL DEFAULT 0,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                force_reset TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )",
+            
             'users' => "CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 srcode VARCHAR(9) UNIQUE NOT NULL,
@@ -62,6 +75,7 @@ class DatabaseSchema {
                 section VARCHAR(20) NOT NULL,
                 usertype ENUM('admin', 'user', 'none') NOT NULL DEFAULT 'none',
                 status ENUM('active', 'inactive') DEFAULT 'active',
+                is_super_admin TINYINT(1) DEFAULT 0,
                 force_reset TINYINT(1) DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -198,18 +212,13 @@ class DatabaseSchema {
                 }
             }
         }
-    }
-
-    public static function getDefaultAdmin() {
+    }    public static function getDefaultAdmin() {
         return [
             'srcode' => '21-00001',
-            'firstname' => 'Admin',
-            'lastname' => 'User',
+            'name' => 'Admin User',
             'email' => 'admin@admin.com',
             'password' => 'Admin@123',
-            'course' => 1,  // Default to BSIT
-            'section' => '2201',
-            'usertype' => 'admin',
+            'is_super_admin' => 1,
             'status' => 'active'
         ];
     }
@@ -226,6 +235,8 @@ class DatabaseSchema {
             // Import stored procedures from sp.sql
             self::importStoredProcedures($conn);
 
+            // Check and setup initial data
+            // First, check for departments and courses
             $result = $conn->query("SELECT COUNT(*) as count FROM departments");
             $hasDepartments = ($result && $result->fetch_assoc()['count'] > 0);
 
@@ -246,6 +257,33 @@ class DatabaseSchema {
                 foreach (self::getCourses() as $course) {
                     $stmt->bind_param('si', $course[0], $course[1]);
                     $stmt->execute();
+                }
+                $stmt->close();
+            }
+
+            // Check for default admin
+            $result = $conn->query("SELECT COUNT(*) as count FROM administrators");
+            $hasAdmin = ($result && $result->fetch_assoc()['count'] > 0);
+
+            if (!$hasAdmin) {
+                $defaultAdmin = self::getDefaultAdmin();
+                $stmt = $conn->prepare("INSERT INTO administrators (srcode, name, email, password, is_super_admin, status) VALUES (?, ?, ?, ?, ?, ?)");
+                if (!$stmt) {
+                    throw new Exception("Failed to prepare admin creation statement");
+                }
+
+                $hashedPassword = password_hash($defaultAdmin['password'], PASSWORD_DEFAULT);
+                $stmt->bind_param('ssssss', 
+                    $defaultAdmin['srcode'],
+                    $defaultAdmin['name'],
+                    $defaultAdmin['email'],
+                    $hashedPassword,
+                    $defaultAdmin['is_super_admin'],
+                    $defaultAdmin['status']
+                );
+
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to create default administrator");
                 }
                 $stmt->close();
             }
