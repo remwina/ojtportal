@@ -1,6 +1,13 @@
 document.addEventListener('DOMContentLoaded', async function() {
     // Initialize CSRF token management
-    await CSRFManager.init();
+    try {
+        const initialized = await CSRFManager.init();
+        if (!initialized) {
+            throw new Error('Failed to initialize CSRF protection');
+        }
+    } catch (error) {
+        console.error('CSRF initialization error:', error);
+    }
     
     // Global search functionality
     const searchButton = document.querySelector('.search-button');
@@ -62,9 +69,163 @@ document.addEventListener('DOMContentLoaded', async function() {
     const applyButtons = document.querySelectorAll('.apply-btn');
     if (applyButtons.length > 0) {
         applyButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const jobId = this.dataset.jobId;
-                showApplyModal(jobId, this);
+            button.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                try {
+                    const jobId = this.dataset.jobId;
+                    const row = this.closest('tr');
+                    const jobTitle = row.querySelector('h6').textContent;
+                    const companyName = row.querySelector('.text-muted').textContent;
+                    
+                    // Create modal for application
+                    const modalHtml = `
+                        <div class="modal fade" id="applyModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Apply for Position</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>You are applying for: <strong>${jobTitle}</strong></p>
+                                        <p>at <strong>${companyName}</strong></p>
+                                        <form id="applicationForm">
+                                            <input type="hidden" name="job_id" value="${jobId}">
+                                            <div class="mb-3">
+                                                <label for="coverLetter" class="form-label">Cover Letter</label>
+                                                <textarea class="form-control" id="coverLetter" name="coverLetter" rows="4" 
+                                                    placeholder="Introduce yourself and explain why you're a good fit for this position..." required></textarea>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-primary" id="submitApplication">Submit Application</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    // Remove any existing modal
+                    const existingModal = document.getElementById('applyModal');
+                    if (existingModal) {
+                        existingModal.remove();
+                    }
+                    
+                    // Add modal to document
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('applyModal'));
+                    modal.show();
+                    
+                    // Handle form submission
+                    document.getElementById('submitApplication').addEventListener('click', async function() {
+                        const submitBtn = this;
+                        const coverLetter = document.getElementById('coverLetter').value;
+                        
+                        if (!coverLetter) {
+                            alert('Please enter a cover letter');
+                            return;
+                        }
+                        
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+                        
+                        try {
+                            const csrfToken = await CSRFManager.ensureValidToken();
+
+                    const { value: formValues } = await Swal.fire({
+                        title: 'Apply for Position',
+                        html: `
+                            <div class="text-start mb-3">
+                                <p>You are applying for: <strong>${jobTitle}</strong></p>
+                                <p>at <strong>${companyName}</strong></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="coverLetter" class="float-start mb-2">Cover Letter</label>
+                                <textarea id="coverLetter" class="form-control" rows="4" 
+                                        placeholder="Introduce yourself and explain why you're a good fit for this position..."></textarea>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Submit Application',
+                        showLoaderOnConfirm: true,
+                        preConfirm: async () => {
+                            const coverLetter = document.getElementById('coverLetter').value;
+                            if (!coverLetter) {
+                                Swal.showValidationMessage('Please enter a cover letter');
+                                return false;
+                            }
+
+                            try {
+                            const formData = new FormData();
+                            formData.append('action', 'applyForJob');
+                            formData.append('job_id', jobId);
+                            formData.append('cover_letter', coverLetter);
+                            formData.append('csrf_token', csrfToken);
+
+                            const response = await fetch('../Backend/Core/MAIN.php', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                // Hide modal
+                                modal.hide();
+                                document.getElementById('applyModal').addEventListener('hidden.bs.modal', function() {
+                                    this.remove();
+                                });
+                                
+                                // Show success message
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Success!',
+                                    text: 'Your application has been submitted successfully.'
+                                });
+
+                                // Update button
+                                button.outerHTML = `
+                                    <button class="btn btn-secondary btn-sm" disabled>
+                                        <i class="bi bi-check2-circle"></i> Applied
+                                    </button>
+                                `;
+                            } else {
+                                throw new Error(data.message || 'Failed to submit application');
+                            }
+                            } catch (error) {
+                                console.error('Application error:', error);
+                                Swal.showValidationMessage(`Application failed: ${error.message}`);
+                                return false;
+                            }
+                        },
+                        allowOutsideClick: () => !Swal.isLoading()
+                    });
+
+                    if (formValues) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'Your application has been submitted successfully.'
+                        });
+
+                        // Update button state
+                        this.outerHTML = `
+                            <button class="btn btn-secondary btn-sm" disabled>
+                                <i class="bi bi-check2-circle"></i> Applied
+                            </button>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error.message || 'Failed to process application. Please try again.'
+                    });
+                }
             });
         });
     }
@@ -261,9 +422,51 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (form) {
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                // Handle form submission
-                modalInstance.hide();
-                showToast('Success', 'Application submitted successfully');
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+
+                try {
+                    const formData = new FormData(form);
+                    const jobId = modal.querySelector('#jobId')?.value;
+                    const coverLetter = modal.querySelector('#coverLetter')?.value;
+
+                    if (!jobId || !coverLetter) {
+                        throw new Error('Missing required fields');
+                    }
+
+                    formData.append('action', 'applyForJob');
+                    formData.append('job_id', jobId);
+                    formData.append('cover_letter', coverLetter);
+                    formData.append('csrf_token', await CSRFManager.ensureValidToken());
+
+                    const response = await fetch('../Backend/Core/MAIN.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        modalInstance.hide();
+                        showAlert('success', 'Success', 'Application submitted successfully');
+                        // Update the button to show Applied status
+                        const applyBtn = document.querySelector(`.apply-btn[data-job-id="${jobId}"]`);
+                        if (applyBtn) {
+                            const parent = applyBtn.parentElement;
+                            parent.innerHTML = `
+                                <button class="btn btn-secondary btn-sm" disabled>
+                                    <i class="bi bi-check2-circle"></i> Applied
+                                </button>
+                            `;
+                        }
+                    } else {
+                        throw new Error(data.message || 'Failed to submit application');
+                    }
+                } catch (error) {
+                    showAlert('error', 'Error', error.message || 'Failed to submit application');
+                } finally {
+                    submitBtn.disabled = false;
+                }
             });
         }
         
@@ -293,7 +496,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 3000);
     }
 
-    function createApplyModalContent({ jobTitle, companyName }) {
+    function createApplyModalContent({ jobId, jobTitle, companyName }) {
         return `
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -304,14 +507,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="modal-body">
                         <p>You are applying for: <strong>${jobTitle}</strong> at <strong>${companyName}</strong></p>
                         <form id="applicationForm">
+                            <input type="hidden" id="jobId" value="${jobId}">
                             <div class="mb-3">
                                 <label for="coverLetter" class="form-label">Cover Letter</label>
                                 <textarea class="form-control" id="coverLetter" rows="4" 
                                         placeholder="Introduce yourself and explain why you're a good fit for this position..." required></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="resumeUpload" class="form-label">Upload Resume</label>
-                                <input class="form-control" type="file" id="resumeUpload" accept=".pdf,.doc,.docx" required>
                             </div>
                         </form>
                     </div>

@@ -33,127 +33,7 @@ $student_name = $_SESSION['student_name'];
     <title>Partner Companies</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style>
-        :root {
-            --primary-red: #C8102E;
-            --soft-red: #E63946;
-            --light-gray: #F8F9FA;
-            --dark-gray: #495057;
-            --pure-white: #FFFFFF;
-        }
-        
-        body {
-            background-color: var(--light-gray);
-            color: var(--dark-gray);
-        }
-        
-        .sidebar {
-            background-color: var(--primary-red);
-            min-height: 100vh;
-            padding: 20px;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: inherit;
-            overflow-y: auto;
-        }
-        
-        .logo-container {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 15px;
-        }
-        
-        .logo {
-            width: 150px;
-            height: auto;
-            margin-bottom: 15px;
-        }
-        
-        .logo-text {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: #ffffff;
-            margin-bottom: 5px;
-        }
-        
-        .logo-subtext {
-            font-size: 1rem;
-            color: #ffffff;
-            font-weight: 500;
-        }
-        
-        .nav-link {
-            color: #ffffff;
-            padding: 10px 15px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .nav-link i {
-            font-size: 1.2rem;
-        }
-        
-        .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-        }
-        
-        .nav-link.active {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-        }
-        
-        .company-card {
-            background: var(--pure-white);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .company-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .company-logo {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .section-header i {
-            font-size: 1.5rem;
-            margin-right: 10px;
-            color: var(--primary-red);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-red);
-            border-color: var(--primary-red);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--soft-red);
-            border-color: var(--soft-red);
-        }
-
-        .main-content {
-            margin-left: 16.666667%;
-        }
+    <link rel="stylesheet" href="../Assets/Styles/user.css">
     </style>
     <!-- Add SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -218,44 +98,82 @@ $student_name = $_SESSION['student_name'];
                     <h4 class="mb-0">Partner Companies</h4>
                 </div>
 
-                <!-- Company Cards -->
-                <div class="row" id="companies-container">
-                    <?php if (empty($companies)): ?>
-                        <div class="col-12">
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i> No partner companies available at the moment.
-                            </div>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($companies as $company): ?>
-                            <div class="col-md-4 company-item">
-                                <div class="company-card">
-                                    <div class="d-flex align-items-center mb-3">
-                                        <img src="<?php echo htmlspecialchars('../Backend/Core/get_company_logo.php?id=' . $company['id']); ?>" 
-                                             alt="<?php echo htmlspecialchars($company['name']); ?> Logo" 
-                                             class="company-logo me-3">
-                                        <div>
-                                            <h5 class="mb-1"><?php echo htmlspecialchars($company['name']); ?></h5>
-                                            <p class="mb-0 text-muted">Industry: <?php echo htmlspecialchars($company['industry']); ?></p>
-                                        </div>
-                                    </div>
-                                    <p class="small mb-3"><?php echo htmlspecialchars($company['description']); ?></p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="small text-muted">
-                                            <i class="bi bi-briefcase-fill"></i> <?php echo $company['open_positions']; ?> Open Positions
-                                        </div>
-                                        <?php if ($company['website']): ?>
-                                            <a href="<?php echo htmlspecialchars($company['website']); ?>" 
-                                               class="btn btn-primary btn-sm" 
-                                               target="_blank">
-                                                Visit Website
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                <!-- Companies Table -->
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Description</th>
+                                    <th>Address</th>
+                                    <th>Contact</th>
+                                    <th>Open Positions</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($companies)): ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            <i class="bi bi-info-circle"></i> No partner companies available at the moment.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($companies as $company): ?>
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="<?php echo htmlspecialchars('../Backend/Core/get_company_logo.php?id=' . $company['id']); ?>" 
+                                                         alt="<?php echo htmlspecialchars($company['name']); ?> Logo" 
+                                                         class="company-logo me-3">
+                                                    <div>
+                                                        <h6 class="mb-0"><?php echo htmlspecialchars($company['name']); ?></h6>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="text-muted mb-0 description-text">
+                                                    <?php echo htmlspecialchars(substr($company['description'], 0, 100) . (strlen($company['description']) > 100 ? '...' : '')); ?>
+                                                </p>
+                                            </td>
+                                            <td>
+                                                <p class="text-muted mb-0">
+                                                    <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($company['address']); ?>
+                                                </p>
+                                            </td>
+                                            <td>
+                                                <?php if ($company['contact_email']): ?>
+                                                    <p class="mb-0"><i class="bi bi-envelope"></i> <?php echo htmlspecialchars($company['contact_email']); ?></p>
+                                                <?php endif; ?>
+                                                <?php if ($company['contact_phone']): ?>
+                                                    <p class="mb-0"><i class="bi bi-telephone"></i> <?php echo htmlspecialchars($company['contact_phone']); ?></p>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">
+                                                    <?php echo $company['open_positions']; ?> Open Position<?php echo $company['open_positions'] != 1 ? 's' : ''; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php if ($company['website']): ?>
+                                                    <a href="<?php echo htmlspecialchars($company['website']); ?>" 
+                                                       class="btn btn-primary btn-sm" 
+                                                       target="_blank">
+                                                        <i class="bi bi-globe"></i> Website
+                                                    </a>
+                                                <?php endif; ?>
+                                                <a href="job_listings.php?company=<?php echo $company['id']; ?>" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-briefcase"></i> View Jobs
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
