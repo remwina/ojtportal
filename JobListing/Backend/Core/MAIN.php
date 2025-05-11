@@ -44,7 +44,7 @@ try {
         
         // Check for token in headers (convert header name to uppercase as per PHP standard)
         $headers = array_change_key_case(getallheaders(), CASE_UPPER);
-        $token = $headers['X-CSRF-TOKEN'] ?? null;
+        $token = $headers['X-CSRF-TOKEN'] ?? $data['csrf_token'] ?? null;
         
         if (!$token) {
             error_log("CSRF token missing in request headers");
@@ -244,7 +244,7 @@ try {
             break;
 
         case 'applyForJob':
-            if (!isset($_SESSION['user_id'])) {
+            if (!isset($_SESSION['student_id'])) {
                 throw new Exception("You must be logged in to apply");
             }
             if (!isset($data['job_id'])) {
@@ -256,7 +256,7 @@ try {
             
             // Check if already applied
             $stmt = $conn->prepare("SELECT id FROM job_applications WHERE user_id = ? AND job_id = ?");
-            $stmt->bind_param('ii', $_SESSION['user_id'], $data['job_id']);
+            $stmt->bind_param('ii', $_SESSION['student_id'], $data['job_id']);
             $stmt->execute();
             if ($stmt->get_result()->num_rows > 0) {
                 throw new Exception("You have already applied for this job");
@@ -264,7 +264,7 @@ try {
             
             // Get user's resume
             $stmt = $conn->prepare("SELECT resume_path FROM student_resumes WHERE user_id = ?");
-            $stmt->bind_param('i', $_SESSION['user_id']);
+            $stmt->bind_param('i', $_SESSION['student_id']);
             $stmt->execute();
             $resume = $stmt->get_result()->fetch_assoc();
             if (!$resume) {
@@ -274,7 +274,7 @@ try {
             // Create application using stored procedure
             $stmt = $conn->prepare("CALL sp_submit_application(?, ?, ?, ?)");
             $coverLetter = $data['cover_letter'] ?? null;
-            $stmt->bind_param('iiss', $_SESSION['user_id'], $data['job_id'], $resume['resume_path'], $coverLetter);
+            $stmt->bind_param('iiss', $_SESSION['student_id'], $data['job_id'], $resume['resume_path'], $coverLetter);
             if (!$stmt->execute()) {
                 throw new Exception("Failed to submit application");
             }

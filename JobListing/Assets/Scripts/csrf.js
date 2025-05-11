@@ -1,19 +1,29 @@
 const CSRFManager = {
     token: null,
     lastRefresh: null,
-    refreshInterval: 1800000, // 30 minutes in milliseconds
-    
+    refreshInterval: 1800000, // 30 minutes in milliseconds,
+
     async init() {
         try {
-            const response = await fetch('../Backend/Core/MAIN.php?action=getCSRFToken');
+            console.log('Initializing CSRF token...');
+            const response = await fetch('../Backend/Core/MAIN.php?action=getCSRFToken', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
             const data = await response.json();
+            console.log('CSRF init response:', data);
             if (data.success && data.token) {
                 this.token = data.token;
                 this.lastRefresh = Date.now();
                 this.updateAllForms();
                 this.startRefreshTimer();
+                console.log('CSRF token initialized:', this.token);
                 return true;
             }
+            console.error('Failed to get CSRF token:', data);
             return false;
         } catch (error) {
             console.error('Failed to initialize CSRF token:', error);
@@ -31,12 +41,28 @@ const CSRFManager = {
 
     async refreshToken() {
         try {
-            const response = await fetch('../Backend/Core/MAIN.php?action=getCSRFToken');
+            console.log('Refreshing CSRF token...');
+            const response = await fetch('../Backend/Core/MAIN.php?action=getCSRFToken', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
             if (data.success && data.token) {
                 this.token = data.token;
                 this.lastRefresh = Date.now();
                 this.updateAllForms();
+                console.log('CSRF token refreshed:', this.token);
+            } else {
+                console.error('Failed to refresh token:', data);
+                throw new Error('Failed to refresh CSRF token');
             }
         } catch (error) {
             console.error('Failed to refresh CSRF token:', error);
@@ -44,10 +70,20 @@ const CSRFManager = {
     },
 
     async ensureValidToken() {
-        if (!this.token || Date.now() - this.lastRefresh >= this.refreshInterval) {
-            await this.refreshToken();
+        try {
+            if (!this.token || Date.now() - this.lastRefresh >= this.refreshInterval) {
+                console.log('Token expired or missing, refreshing...');
+                await this.refreshToken();
+            }
+            if (!this.token) {
+                console.error('No valid token available');
+                throw new Error('No valid CSRF token available');
+            }
+            return this.token;
+        } catch (error) {
+            console.error('Error ensuring valid token:', error);
+            throw error;
         }
-        return this.token;
     },
 
     getToken() {
@@ -87,12 +123,13 @@ const CSRFManager = {
         
         while (retries > 0) {
             try {
-                if (!options.headers) {
-                    options.headers = {};
-                }
-                options.headers['X-CSRF-Token'] = token;
+                options.credentials = 'same-origin';
+                options.headers = {
+                    'X-Csrf-Token': token,
+                    'Accept': 'application/json',
+                    ...options.headers
+                };
                 
-                // Handle different body types
                 if (options.body instanceof FormData) {
                     options.body.append('csrf_token', token);
                 } else if (typeof options.body === 'object') {
@@ -117,7 +154,6 @@ const CSRFManager = {
                 return data;
             } catch (error) {
                 if (error.message?.includes('Invalid security token') && retries > 0) {
-                    // If token is invalid, try to refresh it and retry the request
                     await this.refreshToken();
                     token = this.token;
                     retries--;
