@@ -156,7 +156,21 @@ END$$
 
 CREATE PROCEDURE sp_get_companies()
 BEGIN
-    SELECT * FROM companies ORDER BY name;
+    SELECT c.*,
+           COALESCE((
+               SELECT COUNT(*)
+               FROM job_listings jl
+               WHERE jl.company_id = c.id
+               AND jl.status = 'open'
+               AND (jl.expires_at IS NULL OR jl.expires_at >= CURDATE())
+           ), 0) as open_positions,
+           COALESCE((
+               SELECT COUNT(*)
+               FROM job_listings jl
+               WHERE jl.company_id = c.id
+           ), 0) as total_positions
+    FROM companies c
+    ORDER BY c.name ASC;
 END$$
 
 CREATE PROCEDURE sp_get_active_companies_count()
@@ -238,12 +252,20 @@ END$$
 
 CREATE PROCEDURE sp_get_job_listings(IN p_admin BOOLEAN)
 BEGIN
-    SELECT jl.*, c.name as company_name, c.id as company_id,
-           c.logo_data, c.logo_type
+    SELECT jl.*, 
+           c.name as company_name, 
+           c.id as company_id,
+           c.logo_data, 
+           c.logo_type,
+           COALESCE((
+               SELECT COUNT(*)
+               FROM job_applications ja
+               WHERE ja.job_id = jl.id
+           ), 0) as application_count
     FROM job_listings jl 
-    JOIN companies c ON jl.company_id = c.id 
-    WHERE p_admin OR 
-          (jl.status = 'open' AND (jl.expires_at IS NULL OR jl.expires_at >= CURDATE()))
+    LEFT JOIN companies c ON jl.company_id = c.id 
+    WHERE (p_admin = TRUE) OR 
+          (jl.status = 'open' AND c.status = 'active' AND (jl.expires_at IS NULL OR jl.expires_at >= CURDATE()))
     ORDER BY jl.created_at DESC;
 END$$
 
@@ -261,10 +283,20 @@ CREATE PROCEDURE sp_submit_application(
     IN p_job_id INT
 )
 BEGIN
+    -- First check if the student has a resume
+    DECLARE has_resume INT;
+    SELECT COUNT(*) INTO has_resume FROM student_resumes WHERE user_id = p_user_id;
+    
+    IF has_resume = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Please upload your resume before applying';
+    END IF;
+
+    -- Submit the application
     INSERT INTO job_applications (
-        user_id, job_id
+        user_id, job_id, status
     ) VALUES (
-        p_user_id, p_job_id
+        p_user_id, p_job_id, 'pending'
     );
     SELECT LAST_INSERT_ID() as application_id;
 END$$
@@ -282,10 +314,17 @@ END$$
 
 CREATE PROCEDURE sp_get_user_applications(IN p_user_id INT)
 BEGIN
-    SELECT ja.*, jl.title, c.name as company_name, c.id as company_id
+    SELECT ja.*, 
+           jl.title, 
+           c.name as company_name, 
+           c.id as company_id,
+           sr.id as resume_id,
+           sr.resume_name,
+           sr.resume_type
     FROM job_applications ja 
     JOIN job_listings jl ON ja.job_id = jl.id 
     JOIN companies c ON jl.company_id = c.id 
+    LEFT JOIN student_resumes sr ON sr.user_id = ja.user_id
     WHERE ja.user_id = p_user_id
     ORDER BY ja.created_at DESC;
 END$$

@@ -100,6 +100,7 @@ class SQL_Operations {
             $stmt->close();
             $conn->commit();
             
+            error_log("User created successfully with ID: " . $userId);
             return [
                 'success' => true,
                 'user_id' => $userId,

@@ -59,11 +59,18 @@ class ApplicationsManager {
      * @return array List of all applications with associated data
      */
     public function getAllApplications() {
-        $result = $this->conn->query("SELECT ja.*, jl.title, c.name as company_name, u.firstname, u.lastname, u.email
+        $result = $this->conn->query("SELECT ja.*, 
+                                           jl.title, 
+                                           c.name as company_name, 
+                                           u.firstname, 
+                                           u.lastname, 
+                                           u.email,
+                                           sr.id as resume_id
                                     FROM job_applications ja 
                                     JOIN job_listings jl ON ja.job_id = jl.id
                                     JOIN companies c ON jl.company_id = c.id
                                     JOIN users u ON ja.user_id = u.id
+                                    LEFT JOIN student_resumes sr ON sr.user_id = ja.user_id
                                     ORDER BY ja.created_at DESC");
         return $result->fetch_all(MYSQLI_ASSOC);
     }
@@ -184,8 +191,8 @@ $applications = $manager->getAllApplications();
                                         </select>
                                     </td>
                                     <td>
-                                        <?php if ($app['resume_path']): ?>
-                                            <a href="<?php echo htmlspecialchars($app['resume_path']); ?>" 
+                                        <?php if ($app['resume_id']): ?>
+                                            <a href="../Backend/Core/get_resume.php?id=<?php echo htmlspecialchars($app['resume_id']); ?>" 
                                                class="btn btn-sm btn-outline-primary"
                                                target="_blank">
                                                 <i class="bi bi-file-earmark-pdf"></i> View

@@ -51,7 +51,7 @@ class UserReg {
         }
 
         try {
-            return $this->db->createUser([
+            $result = $this->db->createUser([
                 'usertype' => $usertype,
                 'srcode' => $srcode,
                 'firstname' => $firstname,
@@ -62,7 +62,18 @@ class UserReg {
                 'section' => $section,
                 'status' => 'active'
             ]);
+
+            if (!$result['success']) {
+                return $result;
+            }
+
+            error_log("Registration successful for user: " . $email);
+            return [
+                "success" => true,
+                "message" => "Registration successful"
+            ];
         } catch (Exception $e) {
+            error_log("Registration error: " . $e->getMessage());
             return [
                 "success" => false,
                 "errors" => [["field" => "general", "message" => "Registration failed: " . $e->getMessage()]]

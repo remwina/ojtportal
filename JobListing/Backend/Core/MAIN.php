@@ -267,7 +267,7 @@ try {
             }
             
             // Get user's resume
-            $stmt = $conn->prepare("SELECT resume_path FROM student_resumes WHERE user_id = ?");
+            $stmt = $conn->prepare("SELECT id FROM student_resumes WHERE user_id = ?");
             $stmt->bind_param('i', $_SESSION['student_id']);
             $stmt->execute();
             $resume = $stmt->get_result()->fetch_assoc();
@@ -276,8 +276,8 @@ try {
             }
             
             // Create application using stored procedure
-            $stmt = $conn->prepare("CALL sp_submit_application(?, ?, ?)");
-            $stmt->bind_param('iis', $_SESSION['student_id'], $data['job_id'], $resume['resume_path']);
+            $stmt = $conn->prepare("CALL sp_submit_application(?, ?)");
+            $stmt->bind_param('ii', $_SESSION['student_id'], $data['job_id']);
             if (!$stmt->execute()) {
                 throw new Exception("Failed to submit application");
             }

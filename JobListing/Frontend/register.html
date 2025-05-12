@@ -263,32 +263,13 @@
                         body: formData
                     });
                     
-                    if (data.success) {
-                        // Update CSRF token if provided
-                        if (data.csrf_token) {
-                            CSRFManager.setToken(data.csrf_token);
-                        }
-                        
-                        await Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: 'Registration successful! Please login to continue.',
-                            showConfirmButton: true,
-                            allowOutsideClick: false
-                        });
-                        
-                        window.location.href = 'login.html';
-                    } else {
-                        // Handle validation errors
+                    if (!data.success) {
+                        // Handle validation errors first
                         if (data.errors) {
                             data.errors.forEach(error => {
                                 if (error.field === 'general') {
                                     // Show general error in a popup
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Registration Failed',
-                                        text: error.message
-                                    });
+                                    throw new Error(error.message);
                                 } else {
                                     const errorElement = document.getElementById(error.field + '-error');
                                     if (errorElement) {
@@ -296,10 +277,24 @@
                                     }
                                 }
                             });
-                        } else {
-                            throw new Error(data.message || 'Registration failed');
                         }
+                        throw new Error(data.message || 'Registration failed');
                     }
+                    
+                    // Update CSRF token if provided
+                    if (data.csrf_token) {
+                        CSRFManager.setToken(data.csrf_token);
+                    }
+                    
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Registration successful! Please login to continue.',
+                        showConfirmButton: true,
+                        allowOutsideClick: false
+                    });
+                    
+                    window.location.href = 'login.html';
                 } catch (error) {
                     console.error('Registration error:', error);
                     Swal.fire({

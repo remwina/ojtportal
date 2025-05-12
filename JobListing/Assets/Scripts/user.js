@@ -20,10 +20,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     const searchInput = document.querySelector('.search-bar input');
     
     if (searchButton && searchInput) {
-        searchButton.addEventListener('click', performSearch);
-        searchInput.addEventListener('keypress', function(e) {
+        const performSearch = (searchTerm) => {
+            const rows = document.querySelectorAll('tbody tr');
+            searchTerm = searchTerm.toLowerCase().trim();
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        };
+
+        searchButton.addEventListener('click', () => performSearch(searchInput.value));
+        searchInput.addEventListener('input', (e) => performSearch(e.target.value));
+        searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                performSearch();
+                performSearch(searchInput.value);
             }
         });
     }
@@ -138,11 +148,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             } catch (error) {
                 console.error('Application submission error:', error);
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: error.message || 'Failed to submit application. Please try again.'
-                });
+                // Close the apply modal first
+                modalInstance.hide();
+
+                // Show error dialog after a short delay
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error.message || 'Failed to submit application. Please try again.',
+                        allowOutsideClick: true,
+                        showConfirmButton: true,
+                        confirmButtonText: 'OK'
+                    });
+                }, 300);
             } finally {
                 submitBtn.disabled = false;
                 modalElement.remove();
