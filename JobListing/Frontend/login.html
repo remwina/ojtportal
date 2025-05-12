@@ -121,6 +121,7 @@
     <script src="../Assets/Scripts/loading.js"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/alert.js"></script>
+    <script src="../Assets/Scripts/utils.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             await CSRFManager.init();
@@ -162,12 +163,10 @@
                 
                 try {
                     const formData = new FormData(this);
-                    const response = await fetch('../Backend/Core/MAIN.php', {
+                    const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
                         method: 'POST',
                         body: formData
                     });
-                    
-                    const data = await response.json();
                     
                     if (!data) {
                         throw new Error('Invalid response from server');

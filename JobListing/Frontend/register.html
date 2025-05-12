@@ -147,6 +147,7 @@
     <script src="../Assets/Scripts/loading.js"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/alert.js"></script>
+    <script src="../Assets/Scripts/utils.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             await CSRFManager.init();
@@ -245,12 +246,23 @@
                 
                 if (hasErrors) return;
 
+                const submitButton = this.querySelector('button[type="submit"]');
+                const btnText = submitButton.querySelector('.btn-text');
+                const btnLoader = submitButton.querySelector('.btn-loader');
+                
                 try {
+                    // Show loading state
+                    submitButton.disabled = true;
+                    btnText.style.display = 'none';
+                    btnLoader.style.display = 'inline-block';
+
                     const formData = new FormData(this);
-                    const data = await CSRFManager.fetchWithToken('../Backend/Core/MAIN.php', {
+                    formData.append('action', 'register');
+                    const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
                         method: 'POST',
                         body: formData
                     });
+                    
                     if (data.success) {
                         // Update CSRF token if provided
                         if (data.csrf_token) {
@@ -261,8 +273,8 @@
                             icon: 'success',
                             title: 'Success!',
                             text: 'Registration successful! Please login to continue.',
-                            showConfirmButton: false,
-                            timer: 2000
+                            showConfirmButton: true,
+                            allowOutsideClick: false
                         });
                         
                         window.location.href = 'login.html';
@@ -270,9 +282,18 @@
                         // Handle validation errors
                         if (data.errors) {
                             data.errors.forEach(error => {
-                                const errorElement = document.getElementById(error.field + '-error');
-                                if (errorElement) {
-                                    errorElement.textContent = error.message;
+                                if (error.field === 'general') {
+                                    // Show general error in a popup
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Registration Failed',
+                                        text: error.message
+                                    });
+                                } else {
+                                    const errorElement = document.getElementById(error.field + '-error');
+                                    if (errorElement) {
+                                        errorElement.textContent = error.message;
+                                    }
                                 }
                             });
                         } else {

@@ -16,6 +16,17 @@
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --container-padding: clamp(1rem, 5vw, 2rem);
+
+    /* Animation Timing */
+    --animation-fast: 0.2s;
+    --animation-base: 0.3s;
+    --animation-slow: 0.5s;
+    --animation-slower: 0.8s;
+    
+    /* Animation Curves */
+    --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+    --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 * {
@@ -132,7 +143,7 @@ body {
 }
 
 .hero-text {
-    animation: slideUp 0.8s ease-out forwards;
+    animation: slideUp var(--animation-base) var(--ease-out) forwards;
     background: linear-gradient(135deg, rgba(255, 59, 59, 0.95), rgba(255, 102, 102, 0.95));
     padding: 2rem;
     border-radius: 15px;
@@ -178,7 +189,7 @@ body {
     font-size: clamp(1rem, 2vw + 0.5rem, 1.25rem);
     opacity: 0.95;
     margin-bottom: 0;
-    animation: fadeIn 0.8s ease-out 0.4s forwards;
+    animation: fadeIn var(--animation-base) var(--ease-out) 0.4s forwards;
     opacity: 0;
 }
 
@@ -265,8 +276,8 @@ body {
     border-radius: 15px;
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: transform 0.3s ease, background-color 0.3s ease;
-    animation: slideUp 0.8s ease-out forwards;
+    transition: transform var(--animation-base) var(--ease-out), background-color var(--animation-base) var(--ease-out);
+    animation: slideUp var(--animation-base) var(--ease-out) forwards;
     animation-delay: calc(var(--delay) * 0.2s);
 }
 
@@ -291,7 +302,7 @@ body {
     max-width: 800px;
     width: min(100%, 800px);
     padding: 1.5rem;
-    animation: fadeIn 1s ease-out forwards;
+    animation: fadeIn var(--animation-base) var(--ease-out) forwards;
     position: relative;
     z-index: 1;
 }
@@ -332,7 +343,7 @@ body {
     font-size: 1rem;
     font-weight: 600;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all var(--animation-base) var(--ease-out);
     height: 48px;
     line-height: 1;
     border: 2px solid transparent;
@@ -479,7 +490,7 @@ body {
     background: var(--white);
     font-size: 0.875rem;
     color: var(--gray-700);
-    transition: all 0.3s ease;
+    transition: all var(--animation-base) var(--ease-out);
     height: 40px;
     line-height: 1.5;
 }
@@ -537,7 +548,7 @@ body {
     background: var(--primary-red);
     transform: scaleX(0);
     transform-origin: right;
-    transition: transform 0.3s ease;
+    transition: transform var(--animation-base) var(--ease-out);
 }
 
 .sign-in-link a:hover::after {
@@ -583,8 +594,8 @@ body {
     border-radius: 15px;
     text-align: left;
     border: 1px solid var(--gray-200);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    animation: slideUp 0.8s ease-out forwards;
+    transition: transform var(--animation-base) var(--ease-out), box-shadow var(--animation-base) var(--ease-out);
+    animation: slideUp var(--animation-base) var(--ease-out) forwards;
     animation-delay: calc(var(--delay) * 0.2s);
     color: var(--gray-700);
     position: relative;
@@ -602,7 +613,7 @@ body {
     background: linear-gradient(135deg, rgba(255, 59, 59, 0.1), rgba(255, 102, 102, 0.1));
     z-index: -1;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--animation-base) var(--ease-out);
 }
 
 .feature-card:hover {
@@ -665,7 +676,7 @@ body {
     text-decoration: none;
     border-radius: 12px;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all var(--animation-base) var(--ease-out);
     border: 1px solid rgba(255, 255, 255, 0.2);
     font-size: 0.95rem;
 }
@@ -883,4 +894,32 @@ body {
     .floating-elements {
         display: block;
     }
+}
+
+/* Animation Utilities */
+.animate-up {
+    animation: slideUp var(--animation-base) var(--ease-out) forwards;
+}
+
+.animate-down {
+    animation: slideDown var(--animation-base) var(--ease-out) forwards;
+}
+
+.animate-fade {
+    animation: fadeIn var(--animation-base) var(--ease-out) forwards;
+}
+
+/* Transition Utilities */
+.transition-all {
+    transition: all var(--animation-base) var(--ease-out);
+}
+
+.transition-transform {
+    transition: transform var(--animation-base) var(--ease-out);
+}
+
+.transition-colors {
+    transition: background-color var(--animation-base) var(--ease-out),
+                color var(--animation-base) var(--ease-out),
+                border-color var(--animation-base) var(--ease-out);
 }

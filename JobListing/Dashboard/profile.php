@@ -24,6 +24,21 @@ mysqli_stmt_bind_param($stmt, "i", $student_id);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
 $user_data = mysqli_fetch_assoc($result);
+
+// If no user data is found, use session data as fallback
+if (!$user_data) {
+    $user_data = [
+        'srcode' => $_SESSION['srcode'] ?? 'N/A',
+        'firstname' => explode(' ', $_SESSION['student_name'])[0] ?? 'N/A',
+        'lastname' => explode(' ', $_SESSION['student_name'])[1] ?? '',
+        'email' => $_SESSION['email'] ?? 'N/A',
+        'course_name' => 'Not set',
+        'department_name' => 'Not set',
+        'section' => $_SESSION['section'] ?? 'N/A',
+        'status' => 'active',
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -86,37 +101,40 @@ $user_data = mysqli_fetch_assoc($result);
                     <div class="profile-data">
                         <div class="profile-field">
                             <label>SR Code</label>
-                            <p><?php echo htmlspecialchars($user_data['srcode']); ?></p>
+                            <p><?php echo htmlspecialchars($user_data['srcode'] ?? 'N/A'); ?></p>
                         </div>
                         <div class="profile-field">
                             <label>Full Name</label>
-                            <p><?php echo htmlspecialchars($user_data['firstname'] . ' ' . $user_data['lastname']); ?></p>
+                            <p><?php echo htmlspecialchars(($user_data['firstname'] ?? '') . ' ' . ($user_data['lastname'] ?? '')); ?></p>
                         </div>
                         <div class="profile-field">
                             <label>Email</label>
-                            <p><?php echo htmlspecialchars($user_data['email']); ?></p>
+                            <p><?php echo htmlspecialchars($user_data['email'] ?? 'N/A'); ?></p>
                         </div>
                         <div class="profile-field">
                             <label>Department</label>
-                            <p><?php echo htmlspecialchars($user_data['department_name']); ?></p>
+                            <p><?php echo htmlspecialchars($user_data['department_name'] ?? 'Not set'); ?></p>
                         </div>
                         <div class="profile-field">
                             <label>Course</label>
-                            <p><?php echo htmlspecialchars($user_data['course_name']); ?></p>
+                            <p><?php echo htmlspecialchars($user_data['course_name'] ?? 'Not set'); ?></p>
                         </div>
                         <div class="profile-field">
                             <label>Section</label>
-                            <p><?php echo htmlspecialchars($user_data['section']); ?></p>
+                            <p><?php echo htmlspecialchars($user_data['section'] ?? 'Not set'); ?></p>
                         </div>
                         <div class="profile-field">
                             <label>Account Status</label>
-                            <p><span class="badge bg-<?php echo $user_data['status'] === 'active' ? 'success' : 'warning'; ?>">
-                                <?php echo ucfirst(htmlspecialchars($user_data['status'])); ?>
+                            <p><span class="badge bg-<?php echo ($user_data['status'] ?? 'active') === 'active' ? 'success' : 'warning'; ?>">
+                                <?php echo ucfirst(htmlspecialchars($user_data['status'] ?? 'active')); ?>
                             </span></p>
                         </div>
                         <div class="profile-field">
                             <label>Account Created</label>
-                            <p><?php echo date('F j, Y', strtotime($user_data['created_at'])); ?></p>
+                            <p><?php 
+                                $created_at = $user_data['created_at'] ?? null;
+                                echo $created_at ? date('F j, Y', strtotime($created_at)) : 'Not available';
+                            ?></p>
                         </div>
                     </div>
                 </div>

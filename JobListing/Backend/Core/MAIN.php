@@ -212,7 +212,11 @@ try {
         case 'getJobListings':
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
-            $result = $conn->query("CALL sp_get_job_listings()");
+            $stmt = $conn->prepare("CALL sp_get_job_listings(?)");
+            $isAdmin = isset($_SESSION['usertype']) && $_SESSION['usertype'] === 'admin' ? 1 : 0;
+            $stmt->bind_param("i", $isAdmin);
+            $stmt->execute();
+            $result = $stmt->get_result();
             $jobs = [];
             while ($row = $result->fetch_assoc()) {
                 $jobs[] = $row;
@@ -272,9 +276,8 @@ try {
             }
             
             // Create application using stored procedure
-            $stmt = $conn->prepare("CALL sp_submit_application(?, ?, ?, ?)");
-            $coverLetter = $data['cover_letter'] ?? null;
-            $stmt->bind_param('iiss', $_SESSION['student_id'], $data['job_id'], $resume['resume_path'], $coverLetter);
+            $stmt = $conn->prepare("CALL sp_submit_application(?, ?, ?)");
+            $stmt->bind_param('iis', $_SESSION['student_id'], $data['job_id'], $resume['resume_path']);
             if (!$stmt->execute()) {
                 throw new Exception("Failed to submit application");
             }
@@ -965,6 +968,29 @@ try {
             ];
 
             $response = $adminManager->createAdmin($adminData);
+            break;
+
+        case 'getAdminDetails':
+            if (!isset($_GET['id'])) {
+                throw new Exception("Admin ID is required");
+            }
+            
+            $dbOps = new SQL_Operations();
+            $conn = $dbOps->getConnection();
+            $stmt = $conn->prepare("SELECT id, name, srcode, email, is_super_admin, status, created_at FROM administrators WHERE id = ?");
+            $stmt->bind_param("i", $_GET['id']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $admin = $result->fetch_assoc();
+            
+            if (!$admin) {
+                throw new Exception("Admin not found");
+            }
+            
+            $response = [
+                'success' => true,
+                'data' => $admin
+            ];
             break;
 
         default:

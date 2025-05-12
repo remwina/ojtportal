@@ -24,6 +24,10 @@ DROP PROCEDURE IF EXISTS sp_admin_update_company;
 DROP PROCEDURE IF EXISTS sp_admin_get_dashboard_stats;
 DROP PROCEDURE IF EXISTS sp_admin_force_password_reset;
 DROP PROCEDURE IF EXISTS sp_clear_password_reset_flag;
+DROP PROCEDURE IF EXISTS sp_add_resume;
+DROP PROCEDURE IF EXISTS sp_update_resume;
+DROP PROCEDURE IF EXISTS sp_delete_resume;
+DROP PROCEDURE IF EXISTS sp_get_resume;
 
 -- Authentication and User Management
 DELIMITER $$
@@ -232,12 +236,14 @@ BEGIN
     WHERE jl.id = p_job_id;
 END$$
 
-CREATE PROCEDURE sp_get_job_listings()
+CREATE PROCEDURE sp_get_job_listings(IN p_admin BOOLEAN)
 BEGIN
     SELECT jl.*, c.name as company_name, c.id as company_id,
            c.logo_data, c.logo_type
     FROM job_listings jl 
     JOIN companies c ON jl.company_id = c.id 
+    WHERE p_admin OR 
+          (jl.status = 'open' AND (jl.expires_at IS NULL OR jl.expires_at >= CURDATE()))
     ORDER BY jl.created_at DESC;
 END$$
 
@@ -252,15 +258,13 @@ END$$
 -- Application Management
 CREATE PROCEDURE sp_submit_application(
     IN p_user_id INT,
-    IN p_job_id INT,
-    IN p_resume_path VARCHAR(255),
-    IN p_cover_letter TEXT
+    IN p_job_id INT
 )
 BEGIN
     INSERT INTO job_applications (
-        user_id, job_id, resume_path, cover_letter
+        user_id, job_id
     ) VALUES (
-        p_user_id, p_job_id, p_resume_path, p_cover_letter
+        p_user_id, p_job_id
     );
     SELECT LAST_INSERT_ID() as application_id;
 END$$
@@ -292,6 +296,54 @@ BEGIN
     FROM job_applications 
     WHERE user_id = p_user_id 
     AND status != 'rejected';
+END$$
+
+-- Resume Management
+CREATE PROCEDURE sp_add_resume(
+    IN p_user_id INT,
+    IN p_resume_data LONGBLOB,
+    IN p_resume_name VARCHAR(255),
+    IN p_resume_type VARCHAR(100)
+)
+BEGIN
+    INSERT INTO student_resumes (
+        user_id, resume_data, resume_name, resume_type
+    ) VALUES (
+        p_user_id, p_resume_data, p_resume_name, p_resume_type
+    );
+    SELECT LAST_INSERT_ID() as resume_id;
+END$$
+
+CREATE PROCEDURE sp_update_resume(
+    IN p_user_id INT,
+    IN p_resume_data LONGBLOB,
+    IN p_resume_name VARCHAR(255),
+    IN p_resume_type VARCHAR(100)
+)
+BEGIN
+    UPDATE student_resumes 
+    SET resume_data = p_resume_data,
+        resume_name = p_resume_name,
+        resume_type = p_resume_type,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = p_user_id;
+END$$
+
+CREATE PROCEDURE sp_delete_resume(
+    IN p_user_id INT
+)
+BEGIN
+    DELETE FROM student_resumes 
+    WHERE user_id = p_user_id;
+END$$
+
+CREATE PROCEDURE sp_get_resume(
+    IN p_user_id INT
+)
+BEGIN
+    SELECT resume_data, resume_name, resume_type, uploaded_at, updated_at
+    FROM student_resumes 
+    WHERE user_id = p_user_id;
 END$$
 
 -- Academic Data Management

@@ -1,7 +1,17 @@
 <?php
+/**
+ * Administrator Management System
+ * 
+ * This file handles all administrator-related operations including creating,
+ * viewing, and managing administrator accounts. It includes authentication
+ * checks and super admin privileges verification.
+ */
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Redirect to login if not authenticated
 if (!isset($_SESSION['admin_id'])) {
     header('location: ../Frontend/login.html');
     exit();
@@ -11,12 +21,13 @@ require_once 'Auth.php';
 
 $auth = new Auth();
 
+// Verify authentication status
 if (!$auth->check()) {
     header('Location: Login.php');
     exit();
 }
 
-// Check if user is a super admin
+// Verify super admin privileges
 if (!isset($_SESSION['is_super_admin']) || !$_SESSION['is_super_admin']) {
     header('Location: Dashboard.php');
     exit();
@@ -25,20 +36,44 @@ if (!isset($_SESSION['is_super_admin']) || !$_SESSION['is_super_admin']) {
 require_once __DIR__ . '/../Backend/Core/Security/TokenHandler.php';
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
+/**
+ * AdminsManager Class
+ * 
+ * Handles all administrator management operations including:
+ * - Creating new admin accounts
+ * - Managing super admin privileges
+ * - Retrieving admin information
+ * - Validating admin permissions
+ */
 class AdminsManager {
     private $dbOps;
     private $conn;
 
+    /**
+     * Constructor - Initializes database connection
+     */
     public function __construct() {
         $this->dbOps = new SQL_Operations();
         $this->conn = $this->dbOps->getConnection();
     }
 
+    /**
+     * Retrieves all administrators from the database
+     * 
+     * @return array List of all administrators, sorted by super admin status and creation date
+     */
     public function getAllAdmins() {
         return $this->conn->query("SELECT * FROM administrators ORDER BY is_super_admin DESC, created_at DESC")
             ->fetch_all(MYSQLI_ASSOC);
     }
 
+    /**
+     * Creates a new administrator account
+     * 
+     * @param array $adminData Array containing admin details (srcode, name, email, password, is_super_admin)
+     * @return array Success status and message
+     * @throws Exception If creation fails or validation errors occur
+     */
     public function createAdmin($adminData) {
         if (!$this->canCreateAdmin($_SESSION['admin_id'])) {
             throw new Exception("Only super administrators can create other admin accounts");
@@ -46,7 +81,7 @@ class AdminsManager {
 
         $this->conn->begin_transaction();
         try {
-            // Check for existing email or SR code
+            // Validate unique constraints
             if ($this->emailExists($adminData['email'])) {
                 throw new Exception("An administrator with this email already exists");
             }
@@ -80,6 +115,13 @@ class AdminsManager {
         }
     }
 
+    /**
+     * Toggles super admin status for a given administrator
+     * 
+     * @param int $adminId The ID of the administrator
+     * @return bool Success status of the operation
+     * @throws Exception If validation fails or last super admin is being demoted
+     */
     public function toggleSuperAdmin($adminId) {
         if (!$this->canCreateAdmin($_SESSION['admin_id'])) {
             throw new Exception("Only super administrators can modify admin privileges");
@@ -106,6 +148,12 @@ class AdminsManager {
         return $stmt->execute();
     }
 
+    /**
+     * Checks if the current admin can create other admin accounts
+     * 
+     * @param int $adminId ID of the current admin
+     * @return bool True if the admin can create other admin accounts
+     */
     public function canCreateAdmin($adminId) {
         $stmt = $this->conn->prepare("SELECT is_super_admin FROM administrators WHERE id = ? AND status = 'active'");
         $stmt->bind_param("i", $adminId);
@@ -115,6 +163,12 @@ class AdminsManager {
         return $admin && $admin['is_super_admin'] == 1;
     }
 
+    /**
+     * Checks if the current admin is the last active admin
+     * 
+     * @param int $userId ID of the current admin
+     * @return bool True if the admin is the last active admin
+     */
     public function isLastActiveAdmin($userId) {
         $stmt = $this->conn->prepare("SELECT COUNT(*) as count 
                                     FROM administrators 
@@ -127,6 +181,12 @@ class AdminsManager {
         return $count === 0;
     }
 
+    /**
+     * Checks if an email already exists in the database
+     * 
+     * @param string $email Email to check
+     * @return bool True if the email exists
+     */
     private function emailExists($email) {
         $stmt = $this->conn->prepare("SELECT 1 FROM administrators WHERE email = ?");
         $stmt->bind_param("s", $email);
@@ -134,6 +194,12 @@ class AdminsManager {
         return $stmt->get_result()->num_rows > 0;
     }
 
+    /**
+     * Checks if an SR code already exists in the database
+     * 
+     * @param string $srcode SR code to check
+     * @return bool True if the SR code exists
+     */
     private function srcodeExists($srcode) {
         $stmt = $this->conn->prepare("SELECT 1 FROM administrators WHERE srcode = ?");
         $stmt->bind_param("s", $srcode);
@@ -141,6 +207,9 @@ class AdminsManager {
         return $stmt->get_result()->num_rows > 0;
     }
 
+    /**
+     * Destructor - Closes the database connection
+     */
     public function __destruct() {
         // Connection will be closed by SQL_Operations
     }
@@ -328,6 +397,24 @@ $isSuperAdmin = isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="saveAdminBtn">Create Administrator</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Admin Modal -->
+    <div class="modal fade" id="viewAdminModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Administrator Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Admin details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

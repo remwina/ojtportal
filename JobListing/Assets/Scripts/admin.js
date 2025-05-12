@@ -1,16 +1,20 @@
+/**
+ * Admin Panel JavaScript
+ * Manages functionality for the administrative dashboard including:
+ * - User and admin management
+ * - Job listings and applications
+ * - Company management
+ * - Access control and security
+ */
 document.addEventListener('DOMContentLoaded', async function() {
     try {
-        // Initialize CSRF token management with logging
-        console.log('Initializing CSRF Manager...');
-        const initialized = await CSRFManager.init();
-        console.log('CSRF Manager initialized:', initialized);
-        console.log('Initial token:', CSRFManager.getToken());
-
-        if (!initialized) {
-            throw new Error('Failed to initialize CSRF token');
+        // Initialize security and authentication
+        if (!await CSRFManager.init()) {
+            await Utils.Error.handleError(new Error('Failed to initialize CSRF token'));
+            return;
         }
 
-        // Handle toggle super admin functionality
+        // Initialize super admin privilege management
         document.querySelectorAll('.toggle-super-btn').forEach(button => {
             button.addEventListener('click', async function() {
                 const id = this.dataset.id;
@@ -47,44 +51,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                         this.disabled = true;
 
                         // Get fresh CSRF token
-                        const token = await CSRFManager.ensureValidToken();
-                        
                         const formData = new FormData();
                         formData.append('action', 'toggleSuperAdmin');
                         formData.append('id', id);
-                        formData.append('csrf_token', token);
-
-                        const response = await fetch('../Backend/Core/MAIN.php', {
+                        
+                        const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
                             method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Csrf-Token': token,
-                                'Accept': 'application/json'
-                            }
+                            body: formData
                         });
 
-                        const data = await response.json();
-
-                        if (data.success) {
-                            await Swal.fire({
-                                title: 'Success!',
-                                text: data.message,
-                                icon: 'success',
-                                confirmButtonColor: '#28a745'
-                            });
-                            location.reload();
-                        } else {
-                            throw new Error(data.message || 'Failed to update administrator privileges');
-                        }
+                        await Utils.Error.handleSuccess(data.message || 'Administrator privileges updated successfully');
+                        location.reload();
                     }
                 } catch (error) {
-                    console.error('Error:', error);
-                    await Swal.fire({
-                        title: 'Error!',
-                        text: error.message || 'An error occurred while updating administrator privileges',
-                        icon: 'error',
-                        confirmButtonColor: '#dc3545'
-                    });
+                    await Utils.Error.handleError(error, 'Error!', 'An error occurred while updating administrator privileges');
                 } finally {
                     this.disabled = false;
                 }
@@ -97,13 +77,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (departmentSelect && courseSelect) {
             // Load departments
-            const token = await CSRFManager.ensureValidToken();
-            const deptResponse = await fetch('../Backend/Core/MAIN.php?action=getDepartments', {
-                headers: {
-                    'X-Csrf-Token': token
-                }
-            });
-            const deptData = await deptResponse.json();
+            const deptData = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php?action=getDepartments');
 
             if (deptData.success) {
                 deptData.departments.forEach(dept => {
@@ -117,13 +91,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 courseSelect.innerHTML = '<option value="">Select Course</option>';
                 if (!this.value) return;
 
-                const token = await CSRFManager.ensureValidToken();
-                const courseResponse = await fetch(`../Backend/Core/MAIN.php?action=getCourses&department_id=${this.value}`, {
-                    headers: {
-                        'X-Csrf-Token': token
-                    }
-                });
-                const courseData = await courseResponse.json();
+                const courseData = await Utils.Api.makeApiCall(`../Backend/Core/MAIN.php?action=getCourses&department_id=${this.value}`);
 
                 if (courseData.success) {
                     courseData.courses.forEach(course => {
@@ -200,39 +168,38 @@ document.addEventListener('DOMContentLoaded', async function() {
             return null;
         }
 
-        // Initialize all DataTables with proper error handling
-        tables.jobListings = initDataTable('jobListingsTable', {
-            responsive: true,
-            order: [[5, 'desc']],
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search job listings..."
+        // Initialize DataTables for all data grids
+        const tableConfigs = {
+            jobListings: {
+                id: 'jobListingsTable',
+                order: [[5, 'desc']],
+                placeholder: "Search job listings..."
+            },
+            applications: {
+                id: 'applicationsTable',
+                order: [[3, 'desc']],
+                placeholder: "Search applications..."
+            },
+            companies: {
+                id: 'companiesTable',
+                placeholder: "Search companies..."
+            },
+            users: {
+                id: 'usersTable',
+                placeholder: "Search users..."
             }
-        });
+        };
 
-        tables.applications = initDataTable('applicationsTable', {
-            responsive: true,
-            order: [[3, 'desc']],
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search applications..."
-            }
-        });
-
-        tables.companies = initDataTable('companiesTable', {
-            responsive: true,
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search companies..."
-            }
-        });
-
-        tables.users = initDataTable('usersTable', {
-            responsive: true,
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search users..."
-            }
+        // Initialize each table with consistent configuration
+        Object.entries(tableConfigs).forEach(([key, config]) => {
+            tables[key] = initDataTable(config.id, {
+                responsive: true,
+                order: config.order || [],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: config.placeholder
+                }
+            });
         });
 
         // Safely add event listeners
@@ -327,7 +294,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                             throw new Error(data.message || 'Failed to add job listing');
                         }
                     } catch (error) {
-                        console.error('Error:', error);
                         await Swal.fire({
                             title: 'Error!',
                             text: error.message || 'Failed to add job listing',
@@ -343,44 +309,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // makeApiCall helper function
-        async function makeApiCall(url, options = {}) {
-            try {
-                // Ensure we have CSRF token
-                const token = await CSRFManager.ensureValidToken();
-                
-                // Add CSRF token to both headers and body
-                options.headers = {
-                    'X-Csrf-Token': token,
-                    'Accept': 'application/json',
-                    ...options.headers
-                };
-
-                // If we have FormData, append the token to it
-                if (options.body instanceof FormData) {
-                    options.body.append('csrf_token', token);
-                }
-
-                // Make the request
-                const response = await fetch(url, options);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Server response:', errorText);
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                if (!data.success) {
-                    throw new Error(data.message || 'API call failed');
-                }
-                
-                return data;
-            } catch (error) {
-                console.error('API call failed:', error);
-                throw error;
-            }
-        }
+        // Placeholder comment to maintain code structure
+        // API calls now use Utils.Api.makeApiCall
 
         // Edit button handler 
         document.querySelectorAll('.edit-btn').forEach(button => {
@@ -526,9 +456,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                             }
                         }
 
-                        // Log the form data for debugging
-                        console.log('Updating job with data:', Object.fromEntries(formData.entries()));
-                        
                         formData.append('action', 'updateJobListing');
 
                         const response = await fetch('../Backend/Core/MAIN.php', {
@@ -889,24 +816,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                         this.disabled = true;
 
                         // Get fresh CSRF token
-                        const token = await CSRFManager.ensureValidToken();
-                        
-                        const formData = new FormData();
-                        formData.append('action', 'updateUserStatus');
-                        formData.append('id', id);
-                        formData.append('status', isDeactivate ? 'inactive' : 'active');
-                        formData.append('csrf_token', token);
-
-                        const response = await fetch('../Backend/Core/MAIN.php', {
+                        const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
                             method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Csrf-Token': token,
-                                'Accept': 'application/json'
+                            body: {
+                                action: 'updateUserStatus',
+                                id: id,
+                                status: isDeactivate ? 'inactive' : 'active'
                             }
                         });
-
-                        const data = await response.json();
 
                         if (data.success) {
                             await Swal.fire({
@@ -1222,6 +1139,92 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
         }
+
+        function generateAdminDetailsView(admin) {
+            return `
+                <div class="admin-details p-3">
+                    <div class="detail-section mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="detail-field">
+                                    <label class="text-muted mb-1">Full Name</label>
+                                    <p class="mb-0 fw-semibold">${admin.name}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-field">
+                                    <label class="text-muted mb-1">SR Code</label>
+                                    <p class="mb-0 fw-semibold">${admin.srcode}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-field">
+                                    <label class="text-muted mb-1">Email Address</label>
+                                    <p class="mb-0 fw-semibold">${admin.email}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-field">
+                                    <label class="text-muted mb-1">Account Status</label>
+                                    <p class="mb-0">
+                                        <span class="badge bg-${admin.status === 'active' ? 'success' : 'warning'} rounded-pill">
+                                            ${admin.status === 'active' ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-field">
+                                    <label class="text-muted mb-1">Administrator Level</label>
+                                    <p class="mb-0">
+                                        <span class="badge bg-${admin.is_super_admin ? 'primary' : 'secondary'} rounded-pill">
+                                            ${admin.is_super_admin ? 'Super Administrator' : 'Standard Administrator'}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-field">
+                                    <label class="text-muted mb-1">Account Created</label>
+                                    <p class="mb-0 fw-semibold">${new Date(admin.created_at).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add admin view functionality
+        document.querySelectorAll('.view-btn').forEach(button => {
+            button.addEventListener('click', async function() {
+                const id = this.dataset.id;
+                try {
+                    const response = await fetch(`../Backend/Core/MAIN.php?action=getAdminDetails&id=${id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const modalBody = document.querySelector('#viewAdminModal .modal-body');
+                        modalBody.innerHTML = generateAdminDetailsView(data.data);
+                        const modal = new bootstrap.Modal(document.getElementById('viewAdminModal'));
+                        modal.show();
+                    } else {
+                        throw new Error('Failed to load administrator details');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    await Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'Error occurred while loading administrator details',
+                        icon: 'error'
+                    });
+                }
+            });
+        });
     } catch (error) {
         console.error('Failed to initialize admin functionality:', error);
         await Swal.fire({

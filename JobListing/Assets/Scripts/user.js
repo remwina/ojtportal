@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!initialized) {
             throw new Error('Failed to initialize CSRF protection');
         }
-        console.log('CSRF token initialized successfully:', CSRFManager.getToken());
     } catch (error) {
         console.error('CSRF initialization error:', error);
         await Swal.fire({
@@ -32,11 +31,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Apply for job functionality
     function attachApplyButtonListeners() {
         const applyButtons = document.querySelectorAll('.apply-btn');
-        if (applyButtons.length > 0) {
-            applyButtons.forEach(button => {
-                button.addEventListener('click', handleApplyButtonClick);
-            });
-        }
+        applyButtons.forEach(button => {
+            button.removeEventListener('click', handleApplyButtonClick);
+            button.addEventListener('click', handleApplyButtonClick);
+        });
     }
 
     async function handleApplyButtonClick(e) {
@@ -65,11 +63,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Add token to form
             const form = modalElement.querySelector('#applicationForm');
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = 'csrf_token';
-            tokenInput.value = token;
-            form.appendChild(tokenInput);
+            CSRFManager.updateFormToken(form);
 
             setupApplyModalListeners(modalElement, modalInstance, button);
             modalInstance.show();
@@ -97,11 +91,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 <input type="hidden" name="job_id" value="${jobId}">
                                 <p>You are applying for: <strong>${jobTitle}</strong></p>
                                 <p>at <strong>${companyName}</strong></p>
-                                <div class="mb-3">
-                                    <label for="coverLetter" class="form-label">Cover Letter</label>
-                                    <textarea class="form-control" id="coverLetter" name="coverLetter" rows="4" 
-                                        placeholder="Introduce yourself and explain why you're a good fit for this position..." required></textarea>
-                                </div>
+                                <p class="mt-3">By clicking Submit, you agree to apply for this position.</p>
                             </form>
                         </div>
                         <div class="modal-footer">
@@ -125,59 +115,41 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             submitBtn.disabled = true;
             try {
-                // Get fresh token before submission
-                const token = await CSRFManager.ensureValidToken();
-                if (!token) {
-                    throw new Error('Security token is missing. Please refresh the page.');
-                }
-
                 const formData = new FormData(form);
                 formData.append('action', 'applyForJob');
 
-                // Add token to both FormData and headers
-                formData.set('csrf_token', token);
-
-                const response = await fetch('../Backend/Core/MAIN.php', {
+                const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
                     method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Csrf-Token': token,
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin'
+                    body: formData
                 });
 
-                const data = await response.json();
-                
-                if (data.success) {
-                    modalInstance.hide();
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: 'Your application has been submitted successfully.'
-                    });
+                modalInstance.hide();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Your application has been submitted successfully!'
+                });
 
-                    // Update button to show applied state
-                    applyButton.outerHTML = `
-                        <button class="btn btn-secondary btn-sm" disabled>
-                            <i class="bi bi-check2-circle"></i> Applied
-                        </button>`;
-                } else {
-                    throw new Error(data.message || 'Failed to submit application');
-                }
+                // Update button state
+                applyButton.disabled = true;
+                applyButton.classList.remove('btn-primary');
+                applyButton.classList.add('btn-success');
+                applyButton.innerHTML = '<i class="fas fa-check"></i> Applied';
+
             } catch (error) {
-                console.error('Application error:', error);
+                console.error('Application submission error:', error);
                 await Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: error.message || 'Failed to submit application'
+                    text: error.message || 'Failed to submit application. Please try again.'
                 });
             } finally {
                 submitBtn.disabled = false;
+                modalElement.remove();
             }
         });
 
-        modalElement.addEventListener('hidden.bs.modal', function() {
+        modalElement.addEventListener('hidden.bs.modal', function () {
             modalElement.remove();
         });
     }
@@ -203,6 +175,47 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const applicationData = JSON.parse(this.dataset.application);
                 showApplicationDetails(applicationData);
             });
+        });
+    }
+
+    function showApplicationDetails(application) {
+        // Use SweetAlert2 to show application details in a modal
+        Swal.fire({
+            title: 'Application Details',
+            html: `
+                <div class="application-details">
+                    <div class="mb-3">
+                        <strong>Position:</strong> ${application.title}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Company:</strong> ${application.company_name}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Applied On:</strong> ${new Date(application.created_at).toLocaleDateString()}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong> 
+                        <span class="status-badge status-${application.status.toLowerCase()}">
+                            ${application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Job Type:</strong> ${application.job_type}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Cover Letter:</strong>
+                        <div class="cover-letter mt-2 p-3 bg-light rounded">
+                            ${application.cover_letter || 'No cover letter provided'}
+                        </div>
+                    </div>
+                </div>
+            `,
+            width: '600px',
+            showCloseButton: true,
+            showConfirmButton: false,
+            customClass: {
+                container: 'application-details-modal'
+            }
         });
     }
 

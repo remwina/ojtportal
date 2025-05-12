@@ -56,7 +56,7 @@ $companies = $manager->getAllCompanies();
 </head>
 <body>
     <div class="container-fluid">
-        <div class="row">
+s        <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 sidebar">
                 <div class="logo-container">

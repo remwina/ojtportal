@@ -172,12 +172,12 @@ $student_name = $_SESSION['student_name'];
                                     </div>
                                     <div class="mb-3">
                                         <?php 
-                                        $tags = explode(',', $job['tags']);
+                                        $tags = explode(',', $job['tags'] ?? '');
                                         foreach ($tags as $tag): ?>
                                             <span class="badge bg-primary"><?php echo htmlspecialchars(trim($tag)); ?></span>
                                         <?php endforeach; ?>
-                                        <span class="badge <?php echo $job['location'] == 'Remote' ? 'bg-secondary' : 'bg-success'; ?>">
-                                            <?php echo htmlspecialchars($job['location']); ?>
+                                        <span class="badge <?php echo $job['work_mode'] == 'remote' ? 'bg-secondary' : 'bg-success'; ?>">
+                                            <?php echo htmlspecialchars(ucfirst($job['work_mode'])); ?>
                                         </span>
                                     </div>
                                     <p class="small mb-3"><?php echo htmlspecialchars(substr($job['description'], 0, 100)) . '...'; ?></p>

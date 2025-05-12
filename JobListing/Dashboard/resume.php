@@ -12,10 +12,73 @@ require_once '../Backend/Core/Config/DataManagement/DB_Operations.php';
 $db = new SQL_Operations();
 $conn = $db->getConnection();
 
+// Handle Delete Request
+if (isset($_POST['delete_resume'])) {
+    $delete_query = "DELETE FROM student_resumes WHERE user_id = ?";
+    $stmt = mysqli_prepare($conn, $delete_query);
+    mysqli_stmt_bind_param($stmt, "i", $student_id);
+    
+    if (mysqli_stmt_execute($stmt)) {
+        header('Location: resume.php');
+        exit();
+    } else {
+        $delete_error = "Failed to delete resume";
+    }
+}
+
+// Handle Download/View Request
+if (isset($_GET['action']) && ($_GET['action'] === 'download' || $_GET['action'] === 'view')) {
+    $query = "SELECT resume_data, resume_name, resume_type FROM student_resumes WHERE user_id = ?";
+    $stmt = mysqli_prepare($conn, $query);
+    mysqli_stmt_bind_param($stmt, "i", $student_id);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_store_result($stmt);
+    
+    if (mysqli_stmt_num_rows($stmt) > 0) {
+        mysqli_stmt_bind_result($stmt, $resume_data, $resume_name, $resume_type);
+        mysqli_stmt_fetch($stmt);
+        
+        // Clean any output
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        header('Content-Type: ' . $resume_type);
+        header('Cache-Control: private, no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        if ($_GET['action'] === 'download') {
+            header('Content-Disposition: attachment; filename="' . basename($resume_name) . '"');
+        } else {
+            header('Content-Disposition: inline; filename="' . basename($resume_name) . '"');
+        }
+        
+        header('Content-Length: ' . strlen($resume_data));
+        echo $resume_data;
+        exit();
+    }
+}
+
+// Verify user exists in the database
+$verify_user_query = "SELECT id FROM users WHERE id = ? AND status = 'active'";
+$stmt = mysqli_prepare($conn, $verify_user_query);
+mysqli_stmt_bind_param($stmt, "i", $student_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+
+if (!$result || mysqli_num_rows($result) === 0) {
+    session_destroy();
+    header('location: ../Frontend/login.html');
+    exit();
+}
+
 $create_table_query = "CREATE TABLE IF NOT EXISTS student_resumes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    resume_path VARCHAR(255) NOT NULL,
+    resume_data LONGBLOB,
+    resume_name VARCHAR(255),
+    resume_type VARCHAR(100),
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -26,72 +89,121 @@ if (!mysqli_query($conn, $create_table_query)) {
 }
 
 if (isset($_POST['upload_resume'])) {
-    $target_dir = "uploads/resumes/";
+    if (!isset($_FILES["resume_file"])) {
+        $upload_error = "Please select a file to upload.";
+    } else if ($_FILES["resume_file"]["error"] !== UPLOAD_ERR_OK) {
+        // Get upload error message
+        switch($_FILES["resume_file"]["error"]) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                $upload_error = "The uploaded file exceeds the maximum file size limit of 100MB.";
+                break;
+            case UPLOAD_ERR_PARTIAL:
+                $upload_error = "The file was only partially uploaded. Please try again.";
+                break;
+            case UPLOAD_ERR_NO_FILE:
+                $upload_error = "No file was uploaded. Please select a file.";
+                break;
+            case UPLOAD_ERR_NO_TMP_DIR:
+                $upload_error = "Missing a temporary folder. Please contact support.";
+                break;
+            case UPLOAD_ERR_CANT_WRITE:
+                $upload_error = "Failed to write file to disk. Please contact support.";
+                break;
+            case UPLOAD_ERR_EXTENSION:
+                $upload_error = "A PHP extension stopped the file upload. Please contact support.";
+                break;
+        }
+    } else {
+        // Process the file
+        $file_size = $_FILES["resume_file"]["size"];
+        $file_name = $_FILES["resume_file"]["name"];
+        $file_type = $_FILES["resume_file"]["type"];
+        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
-    if (!file_exists($target_dir)) {
-        mkdir($target_dir, 0777, true);
-    }
-
-    $file_extension = strtolower(pathinfo($_FILES["resume_file"]["name"], PATHINFO_EXTENSION));
-    $new_filename = "resume_" . $student_id . "_" . time() . "." . $file_extension;
-    $target_file = $target_dir . $new_filename;
-    
-    if ($_FILES["resume_file"]["size"] > 5000000) {
-        $upload_error = "Sorry, your file is too large. Maximum size is 5MB.";
-    }
-    else if ($file_extension != "pdf" && $file_extension != "doc" && $file_extension != "docx") {
-        $upload_error = "Sorry, only PDF, DOC & DOCX files are allowed.";
-    }
-    else {
-        if (move_uploaded_file($_FILES["resume_file"]["tmp_name"], $target_file)) {
-            $check_query = "SELECT * FROM student_resumes WHERE user_id = ?";
-            $stmt = mysqli_prepare($conn, $check_query);
-            mysqli_stmt_bind_param($stmt, "i", $student_id);
-            $check_result = mysqli_stmt_execute($stmt);
+        if ($file_size > 104857600) { // 100MB in bytes
+            $upload_error = "Sorry, your file is too large. Maximum size is 100MB.";
+        } else if ($file_extension != "pdf" && $file_extension != "doc" && $file_extension != "docx") {
+            $upload_error = "Sorry, only PDF, DOC & DOCX files are allowed.";
+        } else {
+            // Add error logging
+            error_log("Uploading file: " . $file_name . " (" . $file_type . ")");
+            error_log("File size: " . $file_size . " bytes");
             
-            if (!$check_result) {
-                $upload_error = "Database error: " . mysqli_error($conn);
+            // Read file contents
+            $resume_data = file_get_contents($_FILES["resume_file"]["tmp_name"]);
+            if ($resume_data === false) {
+                $upload_error = "Failed to read the uploaded file.";
+                error_log("Failed to read file: " . $_FILES["resume_file"]["tmp_name"]);
             } else {
-                $result = mysqli_stmt_get_result($stmt);
-                if (mysqli_num_rows($result) > 0) {
-                    $update_query = "UPDATE student_resumes SET resume_path = ? WHERE user_id = ?";
-                    $stmt = mysqli_prepare($conn, $update_query);
-                    mysqli_stmt_bind_param($stmt, "si", $target_file, $student_id);
-                    
-                    if (!mysqli_stmt_execute($stmt)) {
-                        $upload_error = "Error updating record: " . mysqli_error($conn);
-                    } else {
-                        $upload_success = "Your resume has been uploaded successfully.";
-                    }
+                error_log("Successfully read file. Size: " . strlen($resume_data) . " bytes");
+                
+                $check_query = "SELECT id FROM student_resumes WHERE user_id = ?";
+                $stmt = mysqli_prepare($conn, $check_query);
+                mysqli_stmt_bind_param($stmt, "i", $student_id);
+                $check_result = mysqli_stmt_execute($stmt);
+                
+                if (!$check_result) {
+                    $upload_error = "Database error: " . mysqli_error($conn);
                 } else {
-                    $insert_query = "INSERT INTO student_resumes (user_id, resume_path) VALUES (?, ?)";
-                    $stmt = mysqli_prepare($conn, $insert_query);
-                    mysqli_stmt_bind_param($stmt, "is", $student_id, $target_file);
-                    
-                    if (!mysqli_stmt_execute($stmt)) {
-                        $upload_error = "Error inserting record: " . mysqli_error($conn);
+                    $result = mysqli_stmt_get_result($stmt);
+                    if (mysqli_num_rows($result) > 0) {
+                        // Update existing resume
+                        $update_query = "UPDATE student_resumes SET resume_data = ?, resume_name = ?, resume_type = ? WHERE user_id = ?";
+                        $stmt = mysqli_prepare($conn, $update_query);
+                        
+                        // Bind parameters using null
+                        mysqli_stmt_bind_param($stmt, "bssi", $null, $file_name, $file_type, $student_id);
+                        
+                        // Now update the null bind with the actual data
+                        $null = $resume_data;
+                        $stmt->send_long_data(0, $resume_data);
+                        
+                        if (!mysqli_stmt_execute($stmt)) {
+                            $upload_error = "Error updating record: " . mysqli_error($conn);
+                            error_log("MySQL Error during update: " . mysqli_error($conn));
+                        } else {
+                            $upload_success = "Your resume has been uploaded successfully.";
+                            error_log("Resume updated successfully for user " . $student_id);
+                        }
                     } else {
-                        $upload_success = "Your resume has been uploaded successfully.";
+                        // Insert new resume
+                        $insert_query = "INSERT INTO student_resumes (user_id, resume_data, resume_name, resume_type) VALUES (?, ?, ?, ?)";
+                        $stmt = mysqli_prepare($conn, $insert_query);
+                        
+                        // Bind parameters using null for BLOB
+                        mysqli_stmt_bind_param($stmt, "ibss", $student_id, $null, $file_name, $file_type);
+                        
+                        // Now update the null bind with the actual data
+                        $null = $resume_data;
+                        $stmt->send_long_data(1, $resume_data);
+                        
+                        if (!mysqli_stmt_execute($stmt)) {
+                            $upload_error = "Error inserting record: " . mysqli_error($conn);
+                            error_log("MySQL Error during insert: " . mysqli_error($conn));
+                        } else {
+                            $upload_success = "Your resume has been uploaded successfully.";
+                            error_log("Resume inserted successfully for user " . $student_id);
+                        }
                     }
                 }
             }
-        } else {
-            $upload_error = "Sorry, there was an error uploading your file.";
         }
     }
 }
 
+// Fetch existing resume data with proper BLOB handling
 $resume_query = "SELECT * FROM student_resumes WHERE user_id = ?";
 $stmt = mysqli_prepare($conn, $resume_query);
 mysqli_stmt_bind_param($stmt, "i", $student_id);
 mysqli_stmt_execute($stmt);
-$resume_result = mysqli_stmt_get_result($stmt);
+$result = mysqli_stmt_get_result($stmt);
 $resume_data = null;
 
-if ($resume_result) {
-    $resume_data = mysqli_fetch_assoc($resume_result);
-} else {
-    error_log("Database error: " . mysqli_error($conn));
+if ($result && mysqli_num_rows($result) > 0) {
+    $resume_data = mysqli_fetch_assoc($result);
+    // Don't fetch BLOB data here, only when downloading/viewing
+    unset($resume_data['resume_data']);
 }
 ?>
 
@@ -165,9 +277,10 @@ if ($resume_result) {
                 <!-- Resume Upload Card -->
                 <div class="resume-card">
                     <h5 class="mb-3">Upload Your Resume</h5>
-                    <p class="text-muted mb-3">Upload your resume in PDF, DOC, or DOCX format (max 5MB).</p>
+                    <p class="text-muted mb-3">Upload your resume in PDF, DOC, or DOCX format (max 100MB).</p>
                     
                     <form action="resume.php" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="MAX_FILE_SIZE" value="104857600" />
                         <div class="upload-area" id="uploadArea">
                             <i class="bi bi-cloud-upload upload-icon"></i>
                             <h5>Drag & Drop your resume here</h5>
@@ -192,17 +305,22 @@ if ($resume_result) {
                     <div class="d-flex align-items-center mb-3">
                         <i class="bi bi-file-earmark-text me-2" class="document-icon"></i>
                         <div>
-                            <h6 class="mb-0"><?php echo basename($resume_data['resume_path']); ?></h6>
+                            <h6 class="mb-0"><?php echo htmlspecialchars($resume_data['resume_name']); ?></h6>
                             <small class="text-muted">Uploaded on: <?php echo date('F j, Y', strtotime($resume_data['uploaded_at'])); ?></small>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a href="<?php echo $resume_data['resume_path']; ?>" class="btn btn-sm btn-outline-primary" target="_blank">
+                        <a href="resume.php?action=view" class="btn btn-sm btn-outline-primary" target="_blank">
                             <i class="bi bi-eye me-1"></i> View
                         </a>
-                        <a href="<?php echo $resume_data['resume_path']; ?>" class="btn btn-sm btn-outline-success" download>
+                        <a href="resume.php?action=download" class="btn btn-sm btn-outline-success">
                             <i class="bi bi-download me-1"></i> Download
                         </a>
+                        <form method="post" style="display: inline;">
+                            <button type="submit" name="delete_resume" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete your resume?')">
+                                <i class="bi bi-trash me-1"></i> Delete
+                            </button>
+                        </form>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -211,12 +329,58 @@ if ($resume_result) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Add SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // File selection display
         document.getElementById('resumeFile').addEventListener('change', function() {
             const fileName = this.files[0] ? this.files[0].name : 'No file selected';
             document.getElementById('selectedFile').textContent = fileName;
         });
+
+        // Delete resume functionality
+        function deleteResume() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('delete_resume.php', {
+                        method: 'POST'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                'Deleted!',
+                                'Your resume has been deleted.',
+                                'success'
+                            ).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire(
+                                'Error!',
+                                data.message,
+                                'error'
+                            );
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire(
+                            'Error!',
+                            'Something went wrong.',
+                            'error'
+                        );
+                    });
+                }
+            });
+        }
         
         // Drag and drop functionality
         const uploadArea = document.getElementById('uploadArea');

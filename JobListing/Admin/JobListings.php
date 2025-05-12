@@ -27,16 +27,17 @@ class JobListingsManager
     }
 
     public function getAllJobListings()
-    {
-        // Use stored procedure for getting job listings
-        $stmt = $this->conn->prepare("CALL sp_get_job_listings()");
-        if (!$stmt) {
-            throw new Exception("Error preparing statement: " . $this->conn->error);
+    {        // Use stored procedure for getting job listings with admin access
+        $stmt = $this->conn->prepare("CALL sp_get_job_listings(?)");
+        $isAdmin = true;
+        $stmt->bind_param("i", $isAdmin);        if (!$stmt->execute()) {
+            throw new Exception("Error executing stored procedure: " . $stmt->error);
         }
-        if (!$stmt->execute()) {
-            throw new Exception("Error fetching job listings: " . $stmt->error);
+        $result = $stmt->get_result();
+        if (!$result) {
+            throw new Exception("Error fetching job listings: " . $this->conn->error);
         }
-        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        return $result->fetch_all(MYSQLI_ASSOC);
     }
 
     public function getJobById($id)

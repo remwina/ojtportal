@@ -1,4 +1,14 @@
 <?php
+/**
+ * Applications Management System
+ * 
+ * This file handles the administration of job applications, including viewing,
+ * managing, and tracking application statuses. It provides an interface for
+ * administrators to oversee all job applications within the system.
+ * 
+ * Requires authentication and proper session management.
+ */
+
 session_start();
 if (!isset($_SESSION['admin_id'])) {
     header('location: ../Frontend/login.html');
@@ -9,6 +19,7 @@ require_once 'Auth.php';
 
 $auth = new Auth();
 
+// Verify authentication status
 if (!$auth->check()) {
     header('Location: Login.php');
     exit();
@@ -17,15 +28,36 @@ if (!$auth->check()) {
 require_once __DIR__ . '/../Backend/Core/Security/TokenHandler.php';
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
+/**
+ * ApplicationsManager Class
+ * 
+ * Handles all operations related to job applications management including:
+ * - Retrieving application listings
+ * - Managing application statuses
+ * - Coordinating application data with users, jobs, and companies
+ */
 class ApplicationsManager {
     private $dbOps;
     private $conn;
 
+    /**
+     * Constructor - Initializes database connection
+     */
     public function __construct() {
         $this->dbOps = new SQL_Operations();
         $this->conn = $this->dbOps->getConnection();
     }
 
+    /**
+     * Retrieves all job applications with related information
+     * 
+     * Fetches applications along with:
+     * - Job listing details
+     * - Company information
+     * - Applicant details
+     * 
+     * @return array List of all applications with associated data
+     */
     public function getAllApplications() {
         $result = $this->conn->query("SELECT ja.*, jl.title, c.name as company_name, u.firstname, u.lastname, u.email
                                     FROM job_applications ja 
@@ -36,11 +68,15 @@ class ApplicationsManager {
         return $result->fetch_all(MYSQLI_ASSOC);
     }
 
+    /**
+     * Destructor - Connection handling
+     */
     public function __destruct() {
         // Connection will be closed by SQL_Operations
     }
 }
 
+// Initialize ApplicationsManager and fetch all applications
 $manager = new ApplicationsManager();
 $applications = $manager->getAllApplications();
 ?>
@@ -205,22 +241,28 @@ $applications = $manager->getAllApplications();
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/admin.js"></script>
     <script>
+        /**
+         * Initialize DataTable and CSRF management
+         * 
+         * Sets up the applications table with sorting and filtering capabilities
+         * and initializes CSRF token management for secure form submissions.
+         */
         document.addEventListener('DOMContentLoaded', async function() {
-            // Destroy existing DataTable instance if it exists
+            // Ensure clean initialization by destroying any existing instance
             if ($.fn.DataTable.isDataTable('#applicationsTable')) {
                 $('#applicationsTable').DataTable().destroy();
             }
             
-            // Initialize fresh DataTable instance
+            // Initialize DataTable with custom configuration
             $('#applicationsTable').DataTable({
-                order: [[3, 'desc']], // Sort by date column descending
+                order: [[3, 'desc']], // Sort by application date descending
                 pageLength: 10,
                 language: {
                     search: "Filter records:"
                 }
             });
 
-            // Initialize CSRF token management
+            // Initialize CSRF protection
             await CSRFManager.init();
         });
     </script>

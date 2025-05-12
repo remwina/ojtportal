@@ -5,6 +5,15 @@ if (!isset($_SESSION['student_id'])) {
     exit();
 }
 
+// Helper function for JSON encoding
+function safeJsonEncode($data) {
+    return htmlspecialchars(
+        json_encode($data, JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP),
+        ENT_QUOTES,
+        'UTF-8'
+    );
+}
+
 require_once '../Backend/Core/Config/DataManagement/DB_Operations.php';
 $db = new SQL_Operations();
 $conn = $db->getConnection();
@@ -13,8 +22,8 @@ $conn = $db->getConnection();
 $stmt = $conn->prepare("SELECT ja.*, jl.title, jl.description, jl.requirements,
                               c.name as company_name, c.id as company_id,
                               ja.created_at as application_date, ja.status,
-                              ja.cover_letter, ja.resume_path, jl.job_type,
-                              c.address as location
+                              jl.job_type, c.address as location,
+                              (SELECT id FROM student_resumes WHERE user_id = ja.user_id LIMIT 1) as resume_id
                        FROM job_applications ja 
                        JOIN job_listings jl ON ja.job_id = jl.id 
                        JOIN companies c ON jl.company_id = c.id 
@@ -237,7 +246,7 @@ $student_name = $_SESSION['student_name'];
                                                 </td>
                                                 <td>
                                                     <button class="btn btn-sm btn-outline-primary view-details" 
-                                                            data-application='<?php echo json_encode($app); ?>'>
+                                                            data-application='<?php echo safeJsonEncode($app); ?>'>
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                 </td>
@@ -316,7 +325,7 @@ $student_name = $_SESSION['student_name'];
                                                 </td>
                                                 <td>
                                                     <button class="btn btn-sm btn-outline-primary view-details" 
-                                                            data-application='<?php echo json_encode($app); ?>'>
+                                                            data-application='<?php echo safeJsonEncode($app); ?>'>
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                 </td>
@@ -393,7 +402,7 @@ $student_name = $_SESSION['student_name'];
                                                 </td>
                                                 <td>
                                                     <button class="btn btn-sm btn-outline-primary view-details" 
-                                                            data-application='<?php echo json_encode($app); ?>'>
+                                                            data-application='<?php echo safeJsonEncode($app); ?>'>
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                 </td>
@@ -470,7 +479,7 @@ $student_name = $_SESSION['student_name'];
                                                 </td>
                                                 <td>
                                                     <button class="btn btn-sm btn-outline-primary view-details" 
-                                                            data-application='<?php echo json_encode($app); ?>'>
+                                                            data-application='<?php echo safeJsonEncode($app); ?>'>
                                                         <i class="bi bi-eye"></i> View
                                                     </button>
                                                 </td>

@@ -118,14 +118,11 @@ class DatabaseSchema {
                 expires_at DATE,
                 FOREIGN KEY (company_id) REFERENCES companies(id)
             )",
-            
-            'job_applications' => "CREATE TABLE IF NOT EXISTS job_applications (
+              'job_applications' => "CREATE TABLE IF NOT EXISTS job_applications (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
                 job_id INT NOT NULL,
                 status ENUM('pending', 'approved', 'rejected', 'interview') NOT NULL DEFAULT 'pending',
-                resume_path VARCHAR(255),
-                cover_letter TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id),
@@ -143,11 +140,12 @@ class DatabaseSchema {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )",
-            
-            'student_resumes' => "CREATE TABLE IF NOT EXISTS student_resumes (
+              'student_resumes' => "CREATE TABLE IF NOT EXISTS student_resumes (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
-                resume_path VARCHAR(255) NOT NULL,
+                resume_data LONGBLOB,
+                resume_name VARCHAR(255),
+                resume_type VARCHAR(100),
                 uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)

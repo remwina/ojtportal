@@ -2,35 +2,28 @@ async function checkAdminAuth() {
     // Only check admin auth if we're on an admin page
     const isAdminPage = window.location.pathname.includes('/Admin/');
     if (!isAdminPage) {
-        return true; // Skip check for non-admin pages
+        return true;
     }
 
     try {
-        const response = await fetch('../Backend/Core/MAIN.php?action=checkAdmin');
-        const data = await response.json();
+        const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php?action=checkAdmin');
         
         if (!data.isAdmin) {
-            await Swal.fire({
-                title: "Access Denied!",
-                text: "You must be logged in as an administrator to access this page.",
-                icon: "error",
-                confirmButtonText: "Return to Login",
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            });
+            await Utils.Error.handleError(
+                new Error('You must be logged in as an administrator to access this page.'),
+                'Access Denied!',
+                'You must be logged in as an administrator to access this page.'
+            );
             window.location.href = '../../Frontend/login.html';
             return false;
         }
         return true;
     } catch (error) {
-        await Swal.fire({
-            title: "Authentication Error",
-            text: "Please log in again.",
-            icon: "error",
-            showConfirmButton: false,
-            allowOutsideClick: false,
-            allowEscapeKey: false
-        });
+        await Utils.Error.handleError(
+            error,
+            'Authentication Error',
+            'Please log in again.'
+        );
         window.location.href = '../../Frontend/login.html';
         return false;
     }
@@ -39,45 +32,11 @@ async function checkAdminAuth() {
 document.addEventListener('DOMContentLoaded', async function() {
     const isAdmin = await checkAdminAuth();
     if (!isAdmin) return;
-    
-    async function showMessage(element, message, isError = false) {
-        element.textContent = message;
-        element.style.display = 'block';
-        element.className = 'status-message ' + (isError ? 'error' : 'success');
 
-        await Swal.fire({
-            title: isError ? "Error!" : "Success!",
-            text: message,
-            icon: isError ? "error" : "success",
-            confirmButtonText: "Continue"
-        });
-    }
-
-    function showConsoleOutput(element, output) {
-        element.textContent = output;
-        element.style.display = 'block';
-    }
-
-    function setLoading(button, loading) {
-        button.disabled = loading;
-        if (loading) {
-            button.classList.add('loading');
-            swal({
-                title: "Processing...",
-                text: "Please wait while we handle your request.",
-                icon: "info",
-                buttons: false,
-                closeOnClickOutside: false,
-                closeOnEsc: false
-            });
-        } else {
-            button.classList.remove('loading');
-        }
-    }
-
+    // Database operation handler
     async function handleDatabaseOperation(button, statusMessage, consoleOutput, reset = false) {
         try {
-            setLoading(button, true);
+            Utils.Form.setLoading(button, true);
             statusMessage.style.display = 'none';
             consoleOutput.style.display = 'none';
 
@@ -85,36 +44,30 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const formData = new FormData();
             formData.append('reset', reset);
-            formData.append('csrf_token', CSRFManager.getToken());
 
-            const response = await fetch('../Backend/Core/Config/DataManagement/reset_db.php', {
+            const data = await Utils.Api.makeApiCall('../Backend/Core/Config/DataManagement/reset_db.php', {
                 method: 'POST',
                 body: formData
             });
-
-            const data = await response.json();
             
             if (data.success) {
-                await showMessage(statusMessage, reset ? 
+                await Utils.Error.handleSuccess(reset ? 
                     'Database has been reset successfully!' : 
-                    'Database has been created successfully!');
-            } else {
-                await showMessage(statusMessage, data.message || 'Operation failed', true);
+                    'Database has been created successfully!'
+                );
             }
 
             if (data.details) {
-                showConsoleOutput(consoleOutput, JSON.stringify(data.details, null, 2));
+                consoleOutput.textContent = JSON.stringify(data.details, null, 2);
+                consoleOutput.style.display = 'block';
             }
 
         } catch (error) {
-            await showMessage(statusMessage, 'An error occurred: ' + error.message, true);
+            await Utils.Error.handleError(error);
         } finally {
-            setLoading(button, false);
+            Utils.Form.setLoading(button, false);
         }
     }
 
-    window.showMessage = showMessage;
-    window.showConsoleOutput = showConsoleOutput;
-    window.setLoading = setLoading;
     window.handleDatabaseOperation = handleDatabaseOperation;
 });

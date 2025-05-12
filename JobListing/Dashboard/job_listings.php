@@ -9,18 +9,27 @@ require_once '../Backend/Core/Config/DataManagement/DB_Operations.php';
 $db = new SQL_Operations();
 $conn = $db->getConnection();
 
-// Fetch all active job listings with company details
-$query = "SELECT jl.*, c.name as company_name, c.id as company_id, c.address as location,
-          (SELECT COUNT(*) FROM job_applications ja WHERE ja.job_id = jl.id) as application_count
-          FROM job_listings jl 
-          JOIN companies c ON jl.company_id = c.id 
-          WHERE jl.status = 'open' 
-          AND (jl.expires_at IS NULL OR jl.expires_at >= CURDATE())
-          ORDER BY jl.created_at DESC";
-$result = $conn->query($query);
+// Fetch job listings using stored procedure
+$stmt = $conn->prepare("CALL sp_get_job_listings(?)");
+$isAdmin = false; // Student view should only see open jobs
+$stmt->bind_param("i", $isAdmin);
+$stmt->execute();
+$result = $stmt->get_result();
 $jobs = [];
 while ($row = $result->fetch_assoc()) {
     $jobs[] = $row;
+}
+$stmt->close();
+
+// Now get application counts for each job
+foreach ($jobs as &$job) {
+    $countStmt = $conn->prepare("SELECT COUNT(*) as count FROM job_applications WHERE job_id = ?");
+    $countStmt->bind_param("i", $job['id']);
+    $countStmt->execute();
+    $countResult = $countStmt->get_result();
+    $count = $countResult->fetch_assoc();
+    $job['application_count'] = $count['count'];
+    $countStmt->close();
 }
 
 // Get the user's already applied job IDs
@@ -197,7 +206,7 @@ function time_ago($datetime) {
                                             </td>
                                             <td>
                                                 <span class="salary-badge">
-                                                    <i class="bi bi-currency-dollar"></i>
+                                                    <i class="bi bi-cash-coin"></i>
                                                     <?php echo htmlspecialchars($job['salary_range']); ?>
                                                 </span>
                                             </td>
