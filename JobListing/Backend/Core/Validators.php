@@ -5,21 +5,36 @@ class Validators {
     private $db;
 
     public function __construct() {
-        $this->clearAllErrors();
+        $this->errors = [];
+        $this->collectedErrors = [];
         require_once __DIR__ . '/Config/DataManagement/DB_Operations.php';
         $this->db = new SQL_Operations();
     }
-
+    
     private function addToCollectedErrors() {
         if (!empty($this->errors)) {
-            $this->collectedErrors = array_values(array_merge($this->collectedErrors ?? [], array_filter($this->errors)));
+            if (!is_array($this->collectedErrors)) {
+                $this->collectedErrors = [];
+            }
+            foreach ($this->errors as $error) {
+                if (!empty($error)) {
+                    $this->collectedErrors[] = $error;
+                }
+            }
+            // Clear current errors after adding to collected
+            $this->errors = [];
         }
     }
 
     public function getErrors() {
-        return empty($this->collectedErrors) 
-            ? ["success" => true] 
-            : ["success" => false, "errors" => array_values($this->collectedErrors)];
+        $this->addToCollectedErrors(); // Make sure all errors are collected before returning
+        if (empty($this->collectedErrors)) {
+            return ["success" => true];
+        }
+        return [
+            "success" => false,
+            "errors" => array_values(array_filter($this->collectedErrors))
+        ];
     }
 
     public function clearAllErrors() {
@@ -79,14 +94,14 @@ class Validators {
         }
         $this->addToCollectedErrors();
         return empty($this->errors);
-    }
-
-    public function isValidPassword($password, $confirmPassword = null) {
+    }    public function isValidPassword($password, $confirmPassword = null) {
         $this->errors = [];
         
+        // Check for empty password first
         if (empty($password)) {
             $this->errors[] = ["field" => "password", "message" => "Password is required"];
-            return false;
+            $this->addToCollectedErrors();
+            // return false;
         }
 
         $missing = [];
@@ -106,27 +121,24 @@ class Validators {
         
         if (count($missing) > 0) {
             $this->errors[] = ["field" => "password", "message" => "Password must contain " . implode(", ", $missing)];
-            $this->addToCollectedErrors();
-            return false;
         }
 
         if (strlen($password) < 6) {
             $this->errors[] = ["field" => "password", "message" => "Password must be at least 6 characters"];
+        }
+
+        if ($password !== $confirmPassword) {
+            $this->errors[] = ["field" => "confirm_password", "message" => "Passwords do not match"];
+        }
+
+        if ($confirmPassword === null || empty($confirmPassword)) {
+            $this->errors[] = ["field" => "confirm_password", "message" => "Please confirm your password"];
             $this->addToCollectedErrors();
             return false;
         }
 
-        if ($confirmPassword !== null) {
-            if (empty($confirmPassword)) {
-                $this->errors[] = ["field" => "confirm_password", "message" => "Please confirm your password"];
-            } elseif ($password !== $confirmPassword) {
-                $this->errors[] = ["field" => "confirm_password", "message" => "Passwords do not match"];
-            }
-            $this->addToCollectedErrors();
-            return empty($this->errors);
-        }
-
-        return true;
+        $this->addToCollectedErrors();
+        return empty($this->errors);
     }
 
     public function isValidLoginPassword($password) {
@@ -155,10 +167,14 @@ class Validators {
             $this->errors[] = ["field" => "lastname", "message" => "Last name is too long (max 50 characters)"];
         }
 
+        // Validate department selection
+        if (empty($_POST['department'])) {
+            $this->errors[] = ["field" => "department", "message" => "Please select a department"];
+        }
+
+        // Validate course selection
         if (empty($course_id)) {
             $this->errors[] = ["field" => "course", "message" => "Please select a course"];
-        } elseif (!is_numeric($course_id)) {
-            $this->errors[] = ["field" => "course", "message" => "Invalid course selection"];
         }
 
         if (empty($section)) {

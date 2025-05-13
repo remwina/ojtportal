@@ -5,7 +5,6 @@ require_once __DIR__ . '/../Core/REGEX.php';
 require_once __DIR__ . '/../Core/Config/DataManagement/DB_Operations.php';
 
 class Login {
-    private $validator;
     private $db;
     private $conn;
 

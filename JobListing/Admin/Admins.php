@@ -1,17 +1,8 @@
 <?php
-/**
- * Administrator Management System
- * 
- * This file handles all administrator-related operations including creating,
- * viewing, and managing administrator accounts. It includes authentication
- * checks and super admin privileges verification.
- */
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Redirect to login if not authenticated
 if (!isset($_SESSION['admin_id'])) {
     header('location: ../Frontend/login.html');
     exit();
@@ -21,13 +12,11 @@ require_once 'Auth.php';
 
 $auth = new Auth();
 
-// Verify authentication status
 if (!$auth->check()) {
     header('Location: Login.php');
     exit();
 }
 
-// Verify super admin privileges
 if (!isset($_SESSION['is_super_admin']) || !$_SESSION['is_super_admin']) {
     header('Location: Dashboard.php');
     exit();
@@ -36,44 +25,20 @@ if (!isset($_SESSION['is_super_admin']) || !$_SESSION['is_super_admin']) {
 require_once __DIR__ . '/../Backend/Core/Security/TokenHandler.php';
 require_once __DIR__ . '/../Backend/Core/Config/DataManagement/DB_Operations.php';
 
-/**
- * AdminsManager Class
- * 
- * Handles all administrator management operations including:
- * - Creating new admin accounts
- * - Managing super admin privileges
- * - Retrieving admin information
- * - Validating admin permissions
- */
 class AdminsManager {
     private $dbOps;
     private $conn;
 
-    /**
-     * Constructor - Initializes database connection
-     */
     public function __construct() {
         $this->dbOps = new SQL_Operations();
         $this->conn = $this->dbOps->getConnection();
     }
 
-    /**
-     * Retrieves all administrators from the database
-     * 
-     * @return array List of all administrators, sorted by super admin status and creation date
-     */
     public function getAllAdmins() {
         return $this->conn->query("SELECT * FROM administrators ORDER BY is_super_admin DESC, created_at DESC")
             ->fetch_all(MYSQLI_ASSOC);
     }
 
-    /**
-     * Creates a new administrator account
-     * 
-     * @param array $adminData Array containing admin details (srcode, name, email, password, is_super_admin)
-     * @return array Success status and message
-     * @throws Exception If creation fails or validation errors occur
-     */
     public function createAdmin($adminData) {
         if (!$this->canCreateAdmin($_SESSION['admin_id'])) {
             throw new Exception("Only super administrators can create other admin accounts");
@@ -81,12 +46,10 @@ class AdminsManager {
 
         $this->conn->begin_transaction();
         try {
-            // Validate unique constraints
-            if ($this->emailExists($adminData['email'])) {
-                throw new Exception("An administrator with this email already exists");
+            if ($this->emailExists($adminData['email'])) {                throw new Exception("This email is already registered in the system as either an administrator or a user");
             }
             if ($this->srcodeExists($adminData['srcode'])) {
-                throw new Exception("An administrator with this SR code already exists");
+                throw new Exception("This SR code is already registered in the system as either an administrator or a user");
             }
 
             $stmt = $this->conn->prepare("INSERT INTO administrators (srcode, name, email, password, is_super_admin, status) VALUES (?, ?, ?, ?, ?, 'active')");
@@ -115,25 +78,16 @@ class AdminsManager {
         }
     }
 
-    /**
-     * Toggles super admin status for a given administrator
-     * 
-     * @param int $adminId The ID of the administrator
-     * @return bool Success status of the operation
-     * @throws Exception If validation fails or last super admin is being demoted
-     */
     public function toggleSuperAdmin($adminId) {
         if (!$this->canCreateAdmin($_SESSION['admin_id'])) {
             throw new Exception("Only super administrators can modify admin privileges");
         }
 
-        // Prevent last super admin from being demoted
         $stmt = $this->conn->prepare("SELECT COUNT(*) as count FROM administrators WHERE is_super_admin = 1 AND id != ?");
         $stmt->bind_param("i", $adminId);
         $stmt->execute();
         $superAdminCount = $stmt->get_result()->fetch_assoc()['count'];
 
-        // Get current status of the target admin
         $stmt = $this->conn->prepare("SELECT is_super_admin FROM administrators WHERE id = ?");
         $stmt->bind_param("i", $adminId);
         $stmt->execute();
@@ -148,12 +102,6 @@ class AdminsManager {
         return $stmt->execute();
     }
 
-    /**
-     * Checks if the current admin can create other admin accounts
-     * 
-     * @param int $adminId ID of the current admin
-     * @return bool True if the admin can create other admin accounts
-     */
     public function canCreateAdmin($adminId) {
         $stmt = $this->conn->prepare("SELECT is_super_admin FROM administrators WHERE id = ? AND status = 'active'");
         $stmt->bind_param("i", $adminId);
@@ -163,12 +111,6 @@ class AdminsManager {
         return $admin && $admin['is_super_admin'] == 1;
     }
 
-    /**
-     * Checks if the current admin is the last active admin
-     * 
-     * @param int $userId ID of the current admin
-     * @return bool True if the admin is the last active admin
-     */
     public function isLastActiveAdmin($userId) {
         $stmt = $this->conn->prepare("SELECT COUNT(*) as count 
                                     FROM administrators 
@@ -179,47 +121,47 @@ class AdminsManager {
         $result = $stmt->get_result();
         $count = $result->fetch_assoc()['count'];
         return $count === 0;
-    }
-
-    /**
-     * Checks if an email already exists in the database
-     * 
-     * @param string $email Email to check
-     * @return bool True if the email exists
-     */
-    private function emailExists($email) {
+    }    private function emailExists($email) {
+        // Check administrators table
         $stmt = $this->conn->prepare("SELECT 1 FROM administrators WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            return true;
+        }
+        
+        // Also check users table
+        $stmt = $this->conn->prepare("SELECT 1 FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         return $stmt->get_result()->num_rows > 0;
     }
 
-    /**
-     * Checks if an SR code already exists in the database
-     * 
-     * @param string $srcode SR code to check
-     * @return bool True if the SR code exists
-     */
     private function srcodeExists($srcode) {
+        // Check administrators table
         $stmt = $this->conn->prepare("SELECT 1 FROM administrators WHERE srcode = ?");
+        $stmt->bind_param("s", $srcode);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            return true;
+        }
+        
+        // Also check users table
+        $stmt = $this->conn->prepare("SELECT 1 FROM users WHERE srcode = ?");
         $stmt->bind_param("s", $srcode);
         $stmt->execute();
         return $stmt->get_result()->num_rows > 0;
     }
-
-    /**
-     * Destructor - Closes the database connection
-     */
     public function __destruct() {
-        // Connection will be closed by SQL_Operations
+        if ($this->conn) {
+            $this->conn->close();
+        }
     }
 }
 
-// Get instance of AdminsManager
 $manager = new AdminsManager();
 $admins = $manager->getAllAdmins();
 
-// Get admin name and super admin status from session
 $adminName = isset($_SESSION['admin_name']) ? $_SESSION['admin_name'] : 'Admin';
 $isSuperAdmin = isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'];
 ?>
@@ -425,12 +367,9 @@ $isSuperAdmin = isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="../Assets/Scripts/csrf.js"></script>
-    <script src="../Assets/Scripts/utils.js"></script>
-    <script src="../Assets/Scripts/admin.js"></script>
+    <script src="../Assets/Scripts/csrf.js"></script>    <script src="../Assets/Scripts/admin.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            // Initialize DataTable
             if ($.fn.DataTable.isDataTable('#adminsTable')) {
                 $('#adminsTable').DataTable().destroy();
             }

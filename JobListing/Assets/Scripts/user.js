@@ -127,11 +127,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 const formData = new FormData(form);
                 formData.append('action', 'applyForJob');
+                formData.append('csrf_token', await CSRFManager.ensureValidToken());
 
-                const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
+                const response = await fetch('../Backend/Core/MAIN.php', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Csrf-Token': await CSRFManager.ensureValidToken(),
+                        'Accept': 'application/json'
+                    }
                 });
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to submit application');
+                }
 
                 modalInstance.hide();
                 await Swal.fire({
@@ -147,24 +157,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 applyButton.innerHTML = '<i class="fas fa-check"></i> Applied';
 
             } catch (error) {
-                console.error('Application submission error:', error);
-                // Close the apply modal first
-                modalInstance.hide();
-
-                // Show error dialog after a short delay
-                setTimeout(() => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: error.message || 'Failed to submit application. Please try again.',
-                        allowOutsideClick: true,
-                        showConfirmButton: true,
-                        confirmButtonText: 'OK'
-                    });
-                }, 300);
+                console.error('Error:', error);
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Failed to submit application'
+                });
             } finally {
                 submitBtn.disabled = false;
-                modalElement.remove();
             }
         });
 

@@ -147,7 +147,6 @@
     <script src="../Assets/Scripts/loading.js"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/alert.js"></script>
-    <script src="../Assets/Scripts/utils.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             await CSRFManager.init();
@@ -231,20 +230,23 @@
                 
                 // Clear previous errors
                 document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-                
-                // Basic validation
-                const requiredFields = ['firstname', 'lastname', 'department', 'course', 'section', 'srcode', 'email', 'password', 'confirm_password'];
-                let hasErrors = false;
-                
-                requiredFields.forEach(field => {
-                    const input = document.getElementById(field);
-                    if (!input.value.trim()) {
-                        document.getElementById(field + '-error').textContent = 'This field is required';
-                        hasErrors = true;
-                    }
-                });
+                document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
 
-                if (hasErrors) return;
+                const departmentSelect = document.getElementById('department');
+                const courseSelect = document.getElementById('course');
+
+                // Basic frontend validation
+                if (!departmentSelect.value) {
+                    document.getElementById('department-error').textContent = 'Please select a department';
+                    departmentSelect.classList.add('error');
+                    return;
+                }
+
+                if (!courseSelect.value) {
+                    document.getElementById('course-error').textContent = 'Please select a course';
+                    courseSelect.classList.add('error');
+                    return;
+                }
 
                 const submitButton = this.querySelector('button[type="submit"]');
                 const btnText = submitButton.querySelector('.btn-text');
@@ -263,7 +265,7 @@
                     const token = await CSRFManager.ensureValidToken();
                     formData.append('csrf_token', token);
 
-                    const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
+                    const response = await fetch('../Backend/Core/MAIN.php', {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -271,6 +273,7 @@
                             'Accept': 'application/json'
                         }
                     });
+                    const data = await response.json();
                     
                     if (!data || !data.success) {
                         // Handle validation errors first

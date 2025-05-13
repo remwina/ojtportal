@@ -1,4 +1,50 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // Image validation utility
+    function validateLogo(file) {
+        const maxSize = 2 * 1024 * 1024; // 2MB
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        
+        if (!allowedTypes.includes(file.type)) {
+            throw new Error('Logo must be a JPG, PNG or GIF file');
+        }
+        
+        if (file.size > maxSize) {
+            throw new Error('Logo file size must be less than 2MB');
+        }
+        return true;
+    }
+
+    // Initialize DataTable helper
+    function initDataTable(elementId, customOptions = {}) {
+        const element = document.getElementById(elementId);
+        if (!element) return null;
+
+        // Destroy existing instance if it exists
+        if ($.fn.DataTable.isDataTable('#' + elementId)) {
+            $('#' + elementId).DataTable().destroy();
+        }
+
+        const defaultOptions = {
+            responsive: true,
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search..."
+            }
+        };
+
+        return new DataTable('#' + elementId, { ...defaultOptions, ...customOptions });
+    }
+
+    // Validate required fields helper
+    function validateRequiredFields(formData, requiredFields) {
+        for (const field of requiredFields) {
+            const value = formData.get(field);
+            if (!value || value.trim() === '') {
+                throw new Error(`${field.replace('_', ' ')} is required`);
+            }
+        }
+    }
+
     try {
         // Initialize CSRF token management with logging
         console.log('Initializing CSRF Manager...');

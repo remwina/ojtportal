@@ -213,7 +213,6 @@ function time_ago($datetime) {
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/alert.js"></script>
     <script src="../Assets/Scripts/loading.js"></script>
-    <script src="../Assets/Scripts/utils.js"></script>
     <script src="../Assets/Scripts/user.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
