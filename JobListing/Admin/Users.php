@@ -39,10 +39,6 @@ class UsersManager {
                                     ORDER BY u.created_at DESC");
         return $result->fetch_all(MYSQLI_ASSOC);
     }
-
-    public function __destruct() {
-        // Connection will be closed by SQL_Operations
-    }
 }
 
 $manager = new UsersManager();
@@ -152,14 +148,6 @@ $users = $manager->getAllUsers();
                                                 data-action="<?php echo $user['status'] === 'active' ? 'deactivate' : 'activate'; ?>">
                                             <i class="bi <?php echo $user['status'] === 'active' ? 'bi-x-circle' : 'bi-check-circle'; ?>"></i>
                                         </button>
-                                        <?php if ($user['usertype'] !== 'admin'): ?>
-                                        <button class="btn btn-secondary btn-sm force-reset-btn" 
-                                                data-id="<?php echo $user['id']; ?>"
-                                                data-bs-toggle="tooltip" 
-                                                title="Force Password Reset">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

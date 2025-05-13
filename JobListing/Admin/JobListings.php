@@ -150,11 +150,6 @@ class JobListingsManager
         }
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
-
-    public function __destruct()
-    {
-        // Connection will be closed by SQL_Operations
-    }
 }
 
 $manager = new JobListingsManager();

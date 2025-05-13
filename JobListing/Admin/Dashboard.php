@@ -86,10 +86,6 @@ class AdminDashboard {
 
         return $stats;
     }
-
-    public function __destruct() {
-        // Connection will be closed by SQL_Operations
-    }
 }
 
 $dashboard = new AdminDashboard();

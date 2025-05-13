@@ -217,9 +217,7 @@ $isSuperAdmin = isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'
                         <h4 class="mb-0">Administrators Management</h4>
                     </div>
                     <?php if ($manager->canCreateAdmin($_SESSION['admin_id'])): ?>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAdminModal">
-                        <i class="bi bi-plus-circle"></i> Add Administrator
-                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAdminModal">Add Administrator</button>
                     <?php endif; ?>
                 </div>
 

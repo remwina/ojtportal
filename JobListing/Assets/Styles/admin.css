@@ -577,7 +577,6 @@ body {
     gap: 0.5rem;
     transition: all var(--transition-base);
     box-shadow: var(--shadow-sm);
-    text-decoration: none;
 }
 
 [class*="Add"]:hover {
@@ -593,6 +592,88 @@ body {
 
 [class*="Add"]:hover i {
     transform: translateX(2px);
+}
+
+/* Add Button Override */
+.btn-primary[data-bs-target="#addCompanyModal"],
+.btn-primary[data-bs-target="#addAdminModal"],
+[class*="Add"] {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border: none;
+    color: var(--white);
+    padding: 0.625rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary[data-bs-target="#addCompanyModal"]:hover,
+.btn-primary[data-bs-target="#addAdminModal"]:hover,
+[class*="Add"]:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--white);
+    border: none;
+}
+
+.btn-primary[data-bs-target="#addCompanyModal"] i,
+.btn-primary[data-bs-target="#addAdminModal"] i,
+[class*="Add"] i {
+    font-size: 1.1rem;
+    transition: transform var(--transition-base);
+}
+
+.btn-primary[data-bs-target="#addCompanyModal"]:hover i,
+.btn-primary[data-bs-target="#addAdminModal"]:hover i,
+[class*="Add"]:hover i {
+    transform: rotate(90deg);
+}
+
+/* Add New Button Styles */
+button[class*="Add New Job"],
+a[class*="Add New Job"],
+[data-bs-target="#addJobModal"],
+.btn-add-new {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border: none;
+    color: var(--white);
+    padding: 0.625rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+}
+
+button[class*="Add New Job"]:hover,
+a[class*="Add New Job"]:hover,
+[data-bs-target="#addJobModal"]:hover,
+.btn-add-new:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--white);
+}
+
+button[class*="Add New Job"] i,
+a[class*="Add New Job"] i,
+[data-bs-target="#addJobModal"] i,
+.btn-add-new i {
+    font-size: 1.1rem;
+    transition: transform var(--transition-base);
+}
+
+button[class*="Add New Job"]:hover i,
+a[class*="Add New Job"]:hover i,
+[data-bs-target="#addJobModal"]:hover i,
+.btn-add-new:hover i {
+    transform: rotate(90deg);
 }
 
 .filter-controls {
