@@ -30,7 +30,7 @@ class AdminsManager {
     private $conn;
 
     public function __construct() {
-        $this->dbOps = new SQL_Operations();
+        $this->dbOps = SQL_Operations::getInstance();
         $this->conn = $this->dbOps->getConnection();
     }
 
@@ -151,11 +151,6 @@ class AdminsManager {
         $stmt->bind_param("s", $srcode);
         $stmt->execute();
         return $stmt->get_result()->num_rows > 0;
-    }
-    public function __destruct() {
-        if ($this->conn) {
-            $this->conn->close();
-        }
     }
 }
 

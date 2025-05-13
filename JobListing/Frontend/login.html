@@ -206,18 +206,33 @@
                 
                 try {
                     const formData = new FormData(this);
-                    const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
+                    
+                    // Make API call directly since Utils is not available
+                    const response = await fetch('../Backend/Core/MAIN.php', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Csrf-Token': await CSRFManager.ensureValidToken()
+                        }
                     });
                     
+                    const data = await response.json();
                     if (!data) {
                         throw new Error('Invalid response from server');
                     }
                     
                     // Check for deactivation before anything else - uses backend message
                     if (data.isDeactivated === true) {
-                        Utils.Form.clearErrors();
+                        // Clear any existing errors
+                        document.querySelectorAll('.error-message').forEach(el => {
+                            el.textContent = '';
+                            el.style.display = 'none';
+                        });
+                        document.querySelectorAll('input').forEach(input => {
+                            input.classList.remove('error');
+                        });
+                        
                         await Swal.fire({
                             title: data.title,
                             html: data.message,

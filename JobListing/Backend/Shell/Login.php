@@ -9,7 +9,6 @@ class Login {
     private $conn;
 
     public function __construct() {
-        $this->validator = new Validators();
         $this->db = new SQL_Operations();
         $this->conn = $this->db->getConnection();
     }

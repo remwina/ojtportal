@@ -253,28 +253,19 @@ $applications = $manager->getAllApplications();
     <script src="../Assets/Scripts/csrf.js"></script>
     <script src="../Assets/Scripts/admin.js"></script>
     <script>
-        /**
-         * Initialize DataTable and CSRF management
-         * 
-         * Sets up the applications table with sorting and filtering capabilities
-         * and initializes CSRF token management for secure form submissions.
-         */
         document.addEventListener('DOMContentLoaded', async function() {
-            // Ensure clean initialization by destroying any existing instance
             if ($.fn.DataTable.isDataTable('#applicationsTable')) {
                 $('#applicationsTable').DataTable().destroy();
             }
             
-            // Initialize DataTable with custom configuration
             $('#applicationsTable').DataTable({
-                order: [[3, 'desc']], // Sort by application date descending
+                order: [[3, 'desc']], 
                 pageLength: 10,
                 language: {
                     search: "Filter records:"
                 }
             });
 
-            // Initialize CSRF protection
             await CSRFManager.init();
         });
     </script>

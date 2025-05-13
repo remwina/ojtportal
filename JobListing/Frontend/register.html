@@ -9,6 +9,36 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Add SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const departmentSelect = document.getElementById('department');
+
+            // Fetch departments on page load
+            try {
+                const response = await fetch('../Backend/Core/MAIN.php?action=getDepartments');
+                const data = await response.json();
+                if (data.success && data.departments) {
+                    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        departmentSelect.appendChild(option);
+                    });
+                } else {
+                    throw new Error(data.message || 'Failed to load departments');
+                }
+            } catch (error) {
+                console.error('Error loading departments:', error);
+                departmentSelect.innerHTML = '<option value="">Failed to load departments</option>';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load departments. Please refresh the page.',
+                });
+            }
+        });
+    </script>
 </head>
 
 <body>

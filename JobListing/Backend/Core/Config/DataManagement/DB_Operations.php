@@ -3,21 +3,31 @@ require_once 'DB_Connect.php';
 require_once 'DatabaseSchema.php';
 
 class SQL_Operations {
+    private $dbConn;
     private $conn;
+    private static $instance = null;
 
     public function __construct($config = null) {
         if ($config instanceof DBConn) {
-            $this->conn = $config;
+            $this->dbConn = $config;
         } else {
-            $this->conn = new DBConn();
+            $this->dbConn = DBConn::getInstance();
         }
+        $this->conn = $this->dbConn->getConnection();
+    }
+
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
     }
 
     public function getConnection() {
         if (!$this->conn) {
             throw new Exception("Database connection not initialized");
         }
-        return $this->conn->getConnection();
+        return $this->conn;
     }
 
     public function authenticate($email) {
