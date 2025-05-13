@@ -56,39 +56,53 @@ if (isset($_POST['upload_resume'])) {
     }
     else {
         // Read file content
-        $resume_data = file_get_contents($_FILES["resume_file"]["tmp_name"]);
-        $resume_type = $_FILES["resume_file"]["type"];
-        $resume_name = $_FILES["resume_file"]["name"];
-
-        // Check if user already has a resume
-        $check_query = "SELECT * FROM student_resumes WHERE user_id = ?";
-        $stmt = mysqli_prepare($conn, $check_query);
-        mysqli_stmt_bind_param($stmt, "i", $student_id);
-        $check_result = mysqli_stmt_execute($stmt);
+        $resume_data = null;
+        $tmp_name = $_FILES["resume_file"]["tmp_name"];
         
-        if (!$check_result) {
-            $upload_error = "Database error: " . mysqli_error($conn);
+        // Use fopen/fread instead of file_get_contents for better memory handling
+        if ($fp = fopen($tmp_name, 'rb')) {
+            $resume_data = fread($fp, filesize($tmp_name));
+            fclose($fp);
         } else {
-            $result = mysqli_stmt_get_result($stmt);
-            if (mysqli_num_rows($result) > 0) {
-                $update_query = "UPDATE student_resumes SET resume_data = ?, resume_name = ?, resume_type = ? WHERE user_id = ?";
-                $stmt = mysqli_prepare($conn, $update_query);
-                mysqli_stmt_bind_param($stmt, "bssi", $resume_data, $resume_name, $resume_type, $student_id);
-                
-                if (!mysqli_stmt_execute($stmt)) {
-                    $upload_error = "Error updating record: " . mysqli_error($conn);
-                } else {
-                    $upload_success = "Your resume has been updated successfully.";
-                }
+            $upload_error = "Error reading file";
+        }
+        
+        if ($resume_data !== null) {
+            $resume_type = $_FILES["resume_file"]["type"];
+            $resume_name = $_FILES["resume_file"]["name"];
+
+            // Check if user already has a resume
+            $check_query = "SELECT id FROM student_resumes WHERE user_id = ?";
+            $stmt = mysqli_prepare($conn, $check_query);
+            mysqli_stmt_bind_param($stmt, "i", $student_id);
+            $check_result = mysqli_stmt_execute($stmt);
+            
+            if (!$check_result) {
+                $upload_error = "Database error: " . mysqli_error($conn);
             } else {
-                $insert_query = "INSERT INTO student_resumes (user_id, resume_data, resume_name, resume_type) VALUES (?, ?, ?, ?)";
-                $stmt = mysqli_prepare($conn, $insert_query);
-                mysqli_stmt_bind_param($stmt, "ibss", $student_id, $resume_data, $resume_name, $resume_type);
-                
-                if (!mysqli_stmt_execute($stmt)) {
-                    $upload_error = "Error inserting record: " . mysqli_error($conn);
+                $result = mysqli_stmt_get_result($stmt);
+                if (mysqli_num_rows($result) > 0) {
+                    // Update existing resume
+                    $update_query = "UPDATE student_resumes SET resume_data = ?, resume_name = ?, resume_type = ? WHERE user_id = ?";
+                    $stmt = mysqli_prepare($conn, $update_query);
+                    mysqli_stmt_bind_param($stmt, "sssi", $resume_data, $resume_name, $resume_type, $student_id);
+                    
+                    if (!mysqli_stmt_execute($stmt)) {
+                        $upload_error = "Error updating record: " . mysqli_error($conn);
+                    } else {
+                        $upload_success = "Your resume has been updated successfully.";
+                    }
                 } else {
-                    $upload_success = "Your resume has been uploaded successfully.";
+                    // Insert new resume
+                    $insert_query = "INSERT INTO student_resumes (user_id, resume_data, resume_name, resume_type) VALUES (?, ?, ?, ?)";
+                    $stmt = mysqli_prepare($conn, $insert_query);
+                    mysqli_stmt_bind_param($stmt, "isss", $student_id, $resume_data, $resume_name, $resume_type);
+                    
+                    if (!mysqli_stmt_execute($stmt)) {
+                        $upload_error = "Error inserting record: " . mysqli_error($conn);
+                    } else {
+                        $upload_success = "Your resume has been uploaded successfully.";
+                    }
                 }
             }
         }

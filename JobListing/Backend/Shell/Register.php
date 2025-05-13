@@ -16,17 +16,19 @@ class UserReg {
     public function registerUser($usertype, $srcode, $email, $password, $conpass = null, $firstname = '', $lastname = '', $course_id = '', $section = '') {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
-        }
+        }        $this->validator->clearAllErrors();
 
-        $this->validator->clearAllErrors();
+        // Run all validations first
+        $validEmail = $this->validator->isValidEmail($email);
+        $validSrcode = $this->validator->isValidSRCode($srcode);
+        $validPassword = $this->validator->isValidPassword($password, $conpass);
+        $validUserInfo = $this->validator->isValidUserInfo($firstname, $lastname, $course_id, $section);
 
-        $this->validator->isValidEmail($email);
-        $this->validator->isValidSRCode($srcode);
-        $this->validator->isValidPassword($password, $conpass);
-        $this->validator->isValidUserInfo($firstname, $lastname, $course_id, $section);
-        
         // Force usertype to be 'user'
         $usertype = 'user';
+
+        // Get validation result after all checks
+        $validationResult = $this->validator->getErrors();
 
         $validationResult = $this->validator->getErrors();
         if (!$validationResult['success']) {

@@ -26,6 +26,10 @@ require_once __DIR__ . '/Config/DataManagement/DB_Operations.php';
 require_once __DIR__ . '/Security/TokenHandler.php';
 require_once __DIR__ . '/../Shell/Login.php';
 require_once __DIR__ . '/../Shell/Register.php';
+require_once __DIR__ . '/Validators.php';
+
+// Initialize validator globally
+$validator = new Validators();
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -109,27 +113,72 @@ try {
                 $data['password'] ?? ''
             );
             
-            if ($response['success']) {
+            if (!$response['success']) {
+                // Enhanced error handling for other failure cases
+                if (!isset($response['error_type'])) {
+                    $response['error_type'] = 'login_failed';
+                }
+                if (!isset($response['title'])) {
+                    $response['title'] = 'Login Failed';
+                }
+                if (!isset($response['icon'])) {
+                    $response['icon'] = 'error';
+                }
+                
+                // Provide more specific error messages
+                switch ($response['error_type']) {
+                    case 'email_not_found':
+                        $response['message'] = 'No account found with this email address. Please check your email or register for a new account.';
+                        break;
+                    case 'invalid_password':
+                        $response['message'] = 'Incorrect password. Please try again or use the "Forgot Password" link if needed.';
+                        break;
+                    default:
+                        $response['message'] = $response['message'] ?? 'Invalid email or password. Please check your credentials and try again.';
+                }
+                
+                $response['confirmButtonText'] = 'Try Again';
+            } else if ($response['success']) {
+                // Add CSRF token for successful login
                 $response['csrf_token'] = TokenHandler::generateToken();
+                // Add success message and animation timing
+                $response['title'] = 'Login Successful';
+                $response['icon'] = 'success';
+                $response['timer'] = 1500;
+                $response['showConfirmButton'] = false;
+                $response['message'] = 'Redirecting...';
             }
-            break;
             
+            error_log('Final login response: ' . json_encode($response));
+            break;
+
         case 'register':
             $registerShell = new UserReg();
-            $response = $registerShell->registerUser(
-                $data['usertype'] ?? 'none',
-                $data['srcode'] ?? '',
-                $data['email'] ?? '',
-                $data['password'] ?? '',
-                $data['confirm_password'] ?? '',
-                $data['firstname'] ?? '',
-                $data['lastname'] ?? '',
-                $data['course'] ?? '',
-                $data['section'] ?? ''
-            );
-            
-            if ($response['success']) {
-                $response['csrf_token'] = TokenHandler::generateToken();
+            try {
+                $response = $registerShell->registerUser(
+                    $data['usertype'] ?? 'none',
+                    $data['srcode'] ?? '',
+                    $data['email'] ?? '',
+                    $data['password'] ?? '',
+                    $data['confirm_password'] ?? '',
+                    $data['firstname'] ?? '',
+                    $data['lastname'] ?? '',
+                    $data['course'] ?? '',
+                    $data['section'] ?? ''
+                );
+                
+                if ($response['success']) {
+                    $response['csrf_token'] = TokenHandler::generateToken();
+                    error_log("Registration successful");
+                } else {
+                    error_log("Registration validation failed: " . json_encode($response['errors']));
+                }
+            } catch (Exception $e) {
+                error_log("Registration error: " . $e->getMessage());
+                $response = [
+                    'success' => false,
+                    'errors' => [['field' => 'general', 'message' => $e->getMessage()]]
+                ];
             }
             break;
 
@@ -342,6 +391,12 @@ try {
             }
             
             try {
+                // Check for duplicate job title
+                if (!$validator->checkDuplicateJob($_POST['title'], $_POST['company_id'])) {
+                    $validationResult = $validator->getErrors();
+                    throw new Exception($validationResult['errors'][0]['message']);
+                }
+
                 $dbOps = new SQL_Operations();
                 $conn = $dbOps->getConnection();
 
@@ -416,6 +471,12 @@ try {
             }
             
             try {
+                // Check for duplicate job title
+                if (!$validator->checkDuplicateJob($_POST['title'], $_POST['company_id'], $_POST['id'])) {
+                    $validationResult = $validator->getErrors();
+                    throw new Exception($validationResult['errors'][0]['message']);
+                }
+
                 $dbOps = new SQL_Operations();
                 $conn = $dbOps->getConnection();
 
@@ -491,6 +552,12 @@ try {
             if (!isset($_POST['id'], $_POST['name'], $_POST['address'])) {
                 throw new Exception("Missing required fields");
             }
+
+            // Check for duplicate company name
+            if (!$validator->checkDuplicateCompany($_POST['name'], $_POST['id'])) {
+                $validationResult = $validator->getErrors();
+                throw new Exception($validationResult['errors'][0]['message']);
+            }
             
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
@@ -554,6 +621,13 @@ try {
             if (!isset($_POST['name'], $_POST['address'])) {
                 throw new Exception("Company name and address are required");
             }
+
+            // Check for duplicate company name
+            if (!$validator->checkDuplicateCompany($_POST['name'])) {
+                $validationResult = $validator->getErrors();
+                throw new Exception($validationResult['errors'][0]['message']);
+            }
+            
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
             
@@ -589,17 +663,80 @@ try {
             ];
             break;
 
+        case 'getApplicationDetails':
+            if (!isset($_POST['id'])) {
+                throw new Exception("Application ID is required");
+            }
+
+            $dbOps = new SQL_Operations();
+            $conn = $dbOps->getConnection();
+            
+            // Get application details with related information
+            $query = "SELECT ja.*, 
+                           jl.title, jl.description, jl.job_type,
+                           c.name as company_name,
+                           u.firstname, u.lastname, u.email,
+                           sr.id as resume_id
+                    FROM job_applications ja 
+                    JOIN job_listings jl ON ja.job_id = jl.id
+                    JOIN companies c ON jl.company_id = c.id
+                    JOIN users u ON ja.user_id = u.id
+                    LEFT JOIN student_resumes sr ON sr.user_id = ja.user_id
+                    WHERE ja.id = ?";
+
+            $stmt = $conn->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparing statement: " . $conn->error);
+            }
+
+            $stmt->bind_param("i", $_POST['id']);
+            if (!$stmt->execute()) {
+                throw new Exception("Failed to fetch application details: " . $stmt->error);
+            }
+
+            $result = $stmt->get_result();
+            $application = $result->fetch_assoc();
+
+            if (!$application) {
+                throw new Exception("Application not found");
+            }
+
+            $response = [
+                'success' => true,
+                'data' => $application
+            ];
+            break;
+
         case 'updateApplicationStatus':
             if (!isset($_POST['id'], $_POST['status'])) {
                 throw new Exception("Application ID and status are required");
             }
+            
+            // Validate status value
+            $validStatuses = ['pending', 'reviewing', 'interview', 'accepted', 'rejected'];
+            if (!in_array($_POST['status'], $validStatuses)) {
+                error_log("Invalid status value: " . $_POST['status']);
+                throw new Exception("Invalid status value provided");
+            }
+            
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
+            
+            // Log the update attempt
+            error_log("Attempting to update application " . $_POST['id'] . " to status: " . $_POST['status']);
+            
             $stmt = $conn->prepare("CALL sp_admin_update_application_status(?, ?)");
+            if (!$stmt) {
+                error_log("Failed to prepare statement: " . $conn->error);
+                throw new Exception("Database error occurred");
+            }
+            
             $stmt->bind_param("is", $_POST['id'], $_POST['status']);
             if (!$stmt->execute()) {
+                error_log("Failed to execute status update: " . $conn->error . " (Application ID: " . $_POST['id'] . ", Status: " . $_POST['status'] . ")");
                 throw new Exception("Failed to update application status: " . $conn->error);
             }
+            
             $response = [
                 'success' => true,
                 'message' => 'Application status updated successfully'
@@ -771,11 +908,22 @@ try {
             if (!isset($_SESSION['admin_id'])) {
                 throw new Exception("Unauthorized access");
             }
-            
-            // Get user details first
+
+            // Validate status value
+            if (!in_array($_POST['status'], ['active', 'inactive'])) {
+                throw new Exception("Invalid status value");
+            }
+
             $dbOps = new SQL_Operations();
             $conn = $dbOps->getConnection();
-            $stmt = $conn->prepare("SELECT usertype, firstname, lastname, status FROM users WHERE id = ?");
+            
+            // Set admin ID for logging
+            $stmt = $conn->prepare("SET @admin_id = ?");
+            $stmt->bind_param("i", $_SESSION['admin_id']);
+            $stmt->execute();
+            
+            // First get user details for the response message
+            $stmt = $conn->prepare("SELECT firstname, lastname, usertype, status FROM users WHERE id = ?");
             $stmt->bind_param("i", $_POST['id']);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -785,50 +933,76 @@ try {
                 throw new Exception("User not found");
             }
 
+            // Check user type to prevent admin status changes through this endpoint
+            if ($userDetails['usertype'] === 'admin') {
+                throw new Exception("Cannot modify admin status through this endpoint. Please use updateAdminStatus instead.");
+            }
+
+            // Use stored procedure to update status
+            $stmt = $conn->prepare("CALL sp_update_user_status(?, ?)");
+            $stmt->bind_param("is", $_POST['id'], $_POST['status']);
+            
+            try {
+                $stmt->execute();
+                $statusText = $_POST['status'] === 'inactive' ? 'deactivated' : 'activated';
+                $userName = $userDetails['firstname'] . ' ' . $userDetails['lastname'];
+                
+                // Return success response
+                $response = [
+                    'success' => true,
+                    'message' => 'User ' . $userName . ' has been ' . $statusText . ' successfully',
+                    'csrf_token' => TokenHandler::generateToken()
+                ];
+            } catch (mysqli_sql_exception $e) {
+                throw new Exception($e->getMessage());
+            }
+            break;
+
+        case 'updateAdminStatus':
+            if (!isset($_POST['id'], $_POST['status'])) {
+                throw new Exception("Missing required fields");
+            }
+            if (!isset($_SESSION['admin_id'])) {
+                throw new Exception("Unauthorized access");
+            }
+            if (!isset($_SESSION['is_super_admin']) || !$_SESSION['is_super_admin']) {
+                throw new Exception("Only super administrators can modify admin status");
+            }
+
             // Prevent admin from deactivating themselves
             if ($_POST['id'] == $_SESSION['admin_id'] && $_POST['status'] === 'inactive') {
-                throw new Exception("For security reasons, you cannot deactivate your own account. This ensures there is always at least one active administrator. Please contact another administrator if you need to deactivate this account.");
-            }
-
-            // Prevent deactivation of other admins if not super admin
-            if ($userDetails['usertype'] === 'admin' && $_POST['status'] === 'inactive') {
-                if (!isset($_SESSION['is_super_admin']) || !$_SESSION['is_super_admin']) {
-                    throw new Exception("Only super administrators can deactivate admin accounts");
-                }
+                throw new Exception("For security reasons, you cannot deactivate your own account. Please contact another administrator if you need to deactivate this account.");
             }
             
-            // Prevent last admin from being deactivated
-            if ($userDetails['usertype'] === 'admin' && $_POST['status'] === 'inactive') {
-                $activeAdminsStmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE usertype = 'admin' AND status = 'active' AND id != ?");
-                $activeAdminsStmt->bind_param("i", $_POST['id']);
-                $activeAdminsStmt->execute();
-                $activeAdminsCount = $activeAdminsStmt->get_result()->fetch_assoc()['count'];
+            $dbOps = new SQL_Operations();
+            $conn = $dbOps->getConnection();
+            
+            // First get admin details for the response message
+            $stmt = $conn->prepare("SELECT name FROM administrators WHERE id = ?");
+            $stmt->bind_param("i", $_POST['id']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $adminDetails = $result->fetch_assoc();
+            
+            if (!$adminDetails) {
+                throw new Exception("Administrator not found");
+            }
+
+            // Use the stored procedure to update status
+            $stmt = $conn->prepare("CALL sp_update_admin_status(?, ?)");
+            $stmt->bind_param("is", $_POST['id'], $_POST['status']);
+            
+            try {
+                $stmt->execute();
+                $statusText = $_POST['status'] === 'inactive' ? 'deactivated' : 'activated';
                 
-                if ($activeAdminsCount === 0) {
-                    throw new Exception("Cannot deactivate the last active administrator account. At least one administrator must remain active.");
-                }
+                $response = [
+                    'success' => true,
+                    'message' => 'Administrator ' . $adminDetails['name'] . ' has been ' . $statusText . ' successfully'
+                ];
+            } catch (Exception $e) {
+                throw new Exception($e->getMessage());
             }
-
-            // Check if we're trying to change to the same status
-            if ($userDetails['status'] === $_POST['status']) {
-                throw new Exception("User account is already " . $_POST['status']);
-            }
-
-            $stmt = $conn->prepare("UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
-            $stmt->bind_param("si", $_POST['status'], $_POST['id']);
-            $result = $stmt->execute();
-            
-            if (!$result) {
-                throw new Exception("Failed to update user status: " . $conn->error);
-            }
-
-            $statusText = $_POST['status'] === 'inactive' ? 'deactivated' : 'activated';
-            $userName = $userDetails['firstname'] . ' ' . $userDetails['lastname'];
-            
-            $response = [
-                'success' => true,
-                'message' => 'User ' . $userName . ' has been ' . $statusText . ' successfully'
-            ];
             break;
 
         case 'changeAdminPassword':
@@ -845,7 +1019,6 @@ try {
             $confirmPassword = $_POST['confirmPassword'];
 
             // Validate new password
-            $validator = new Validators();
             $validator->isValidPassword($newPassword, $confirmPassword);
             $validationResult = $validator->getErrors();
             
@@ -946,13 +1119,12 @@ try {
             // Validate required fields
             $requiredFields = ['srcode', 'name', 'email', 'password', 'confirm_password'];
             foreach ($requiredFields as $field) {
-                if (!isset($_POST[$field]) || trim($_POST[$field]) === '') {
+                if (!isset($field) || trim($field) === '') {
                     throw new Exception("$field is required");
                 }
             }
 
             // Validate password
-            $validator = new Validators();
             $validator->isValidPassword($_POST['password'], $_POST['confirm_password']);
             $validationResult = $validator->getErrors();
             if (!$validationResult['success']) {

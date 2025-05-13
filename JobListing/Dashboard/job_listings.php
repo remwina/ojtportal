@@ -9,20 +9,53 @@ require_once '../Backend/Core/Config/DataManagement/DB_Operations.php';
 $db = new SQL_Operations();
 $conn = $db->getConnection();
 
-// Fetch active companies with their job listings count
-$query = "SELECT c.*, 
-          (SELECT COUNT(*) FROM job_listings jl WHERE jl.company_id = c.id AND jl.status = 'open') as open_positions,
-          (SELECT COUNT(*) FROM job_listings jl WHERE jl.company_id = c.id) as total_positions
-          FROM companies c 
-          WHERE c.status = 'active' 
-          ORDER BY c.name ASC";
+// Fetch all active job listings with company details
+$query = "SELECT jl.*, c.name as company_name, c.id as company_id, c.address as location,
+          (SELECT COUNT(*) FROM job_applications ja WHERE ja.job_id = jl.id) as application_count
+          FROM job_listings jl 
+          JOIN companies c ON jl.company_id = c.id 
+          WHERE jl.status = 'open' 
+          AND (jl.expires_at IS NULL OR jl.expires_at >= CURDATE())
+          ORDER BY jl.created_at DESC";
 $result = $conn->query($query);
-$companies = [];
+$jobs = [];
 while ($row = $result->fetch_assoc()) {
-    $companies[] = $row;
+    $jobs[] = $row;
+}
+
+// Get the user's already applied job IDs
+$stmt = $conn->prepare("SELECT job_id FROM job_applications WHERE user_id = ?");
+$stmt->bind_param('i', $_SESSION['student_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$applied_jobs = [];
+while ($row = $result->fetch_assoc()) {
+    $applied_jobs[] = $row['job_id'];
 }
 
 $student_name = $_SESSION['student_name'];
+
+// Helper function to calculate time ago
+function time_ago($datetime) {
+    $now = new DateTime();
+    $then = new DateTime($datetime);
+    $diff = $now->getTimestamp() - $then->getTimestamp();
+    
+    if ($diff < 60) {
+        return 'Just now';
+    } elseif ($diff < 3600) {
+        $mins = floor($diff / 60);
+        return $mins . ' minute' . ($mins > 1 ? 's' : '') . ' ago';
+    } elseif ($diff < 86400) {
+        $hours = floor($diff / 3600);
+        return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+    } elseif ($diff < 604800) { // Less than 7 days
+        $days = floor($diff / 86400);
+        return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+    } else {
+        return $then->format('M j, Y'); // e.g., "May 1, 2025"
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -30,7 +63,7 @@ $student_name = $_SESSION['student_name'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Partner Companies</title>
+    <title>Job Listings</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
@@ -51,13 +84,13 @@ $student_name = $_SESSION['student_name'];
                     <a href="dashboard.php" class="nav-link">
                         <i class="bi bi-house-door-fill"></i> Dashboard
                     </a>
-                    <a href="job_listings.php" class="nav-link">
+                    <a href="job_listings.php" class="nav-link active">
                         <i class="bi bi-briefcase-fill"></i> Job Listings
                     </a>
                     <a href="applications.php" class="nav-link">
                         <i class="bi bi-file-earmark-text-fill"></i> My Applications
                     </a>
-                    <a href="companies.php" class="nav-link active">
+                    <a href="companies.php" class="nav-link">
                         <i class="bi bi-building-fill"></i> Partner Companies
                     </a>
                     <a href="resume.php" class="nav-link">
@@ -74,103 +107,100 @@ $student_name = $_SESSION['student_name'];
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 p-4 main-content">
-                <!-- Section Header with Profile -->
-                <div class="section-header d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-building-fill me-2"></i>
-                            <h4 class="mb-0">Partner Companies</h4>
+                <!-- Page Header -->
+                <div class="section-header mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-briefcase-fill"></i>
+                        <div>
+                            <h4>Available Positions</h4>
+                            <p>Find and apply for job opportunities</p>
                         </div>
-                        <div class="text-muted small mt-1">Explore our trusted partner companies offering internship opportunities</div>
                     </div>
                     <div class="profile-section">
                         <i class="bi bi-person-circle profile-icon"></i>
-                        <span class="profile-name ms-2"><?php echo htmlspecialchars($student_name); ?></span>
+                        <span class="ms-2"><?php echo htmlspecialchars($student_name); ?></span>
                     </div>
                 </div>
 
-                <!-- Companies Content -->
-                <div class="companies-wrapper">
-                    <?php if (empty($companies)): ?>
-                        <div class="empty-state text-center p-5">
-                            <i class="bi bi-building text-primary display-1 mb-4"></i>
-                            <h4 class="mb-3">No Partner Companies</h4>
-                            <p class="text-muted mb-4">We don't have any partner companies registered at the moment.</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table id="companiesTable" class="table table-hover align-middle">
-                                <thead>
+                <!-- Jobs Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Position</th>
+                                    <th>Requirements</th>
+                                    <th>Location & Type</th>
+                                    <th>Salary Range</th>
+                                    <th>Posted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($jobs)): ?>
                                     <tr>
-                                        <th>Company</th>
-                                        <th>Description</th>
-                                        <th>Contact Information</th>
-                                        <th>Open Positions</th>
-                                        <th>Actions</th>
+                                        <td colspan="6" class="text-center py-4">
+                                            <i class="bi bi-info-circle"></i> No job listings available at the moment.
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($companies as $company): ?>
-                                        <tr>
+                                <?php else: ?>
+                                    <?php foreach ($jobs as $job): ?>
+                                        <tr data-job-type="<?php echo htmlspecialchars($job['job_type']); ?>"
+                                            data-work-mode="<?php echo htmlspecialchars($job['work_mode']); ?>"
+                                            data-salary="<?php echo htmlspecialchars($job['salary_range']); ?>"
+                                            data-job-id="<?php echo htmlspecialchars($job['id']); ?>">
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <img src="<?php echo htmlspecialchars('../Backend/Core/get_company_logo.php?id=' . $company['id']); ?>" 
-                                                         alt="<?php echo htmlspecialchars($company['name']); ?> Logo" 
-                                                         class="company-logo-sm me-2">
+                                                    <img src="<?php echo htmlspecialchars('../Backend/Core/get_company_logo.php?id=' . $job['company_id']); ?>" 
+                                                         alt="<?php echo htmlspecialchars($job['company_name']); ?> Logo" 
+                                                         class="company-logo me-3">
                                                     <div>
-                                                        <?php echo htmlspecialchars($company['name']); ?>
-                                                        <div class="text-muted small">
-                                                            <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($company['address']); ?>
-                                                        </div>
+                                                        <h6 class="mb-0"><?php echo htmlspecialchars($job['title']); ?></h6>
+                                                        <p class="mb-0 text-muted"><?php echo htmlspecialchars($job['company_name']); ?></p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="description-text">
-                                                    <?php echo htmlspecialchars(substr($company['description'], 0, 100) . (strlen($company['description']) > 100 ? '...' : '')); ?>
+                                                <div class="requirements-cell">
+                                                    <p class="mb-0 small text-muted">
+                                                        <?php echo htmlspecialchars(substr($job['requirements'], 0, 100) . (strlen($job['requirements']) > 100 ? '...' : '')); ?>
+                                                    </p>
                                                 </div>
                                             </td>
                                             <td>
-                                                <?php if ($company['contact_email']): ?>
-                                                    <div class="text-muted small">
-                                                        <i class="bi bi-envelope"></i> <?php echo htmlspecialchars($company['contact_email']); ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                                <?php if ($company['contact_phone']): ?>
-                                                    <div class="text-muted small">
-                                                        <i class="bi bi-telephone"></i> <?php echo htmlspecialchars($company['contact_phone']); ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-primary">
-                                                    <?php echo $company['open_positions']; ?> Open Position<?php echo $company['open_positions'] != 1 ? 's' : ''; ?>
+                                                <p class="mb-1">
+                                                    <i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($job['location'] ?? 'Location not specified'); ?>
+                                                </p>
+                                                <span class="badge <?php echo $job['work_mode'] == 'Remote' ? 'badge-remote' : 'badge-onsite'; ?>">
+                                                    <i class="bi <?php echo $job['work_mode'] == 'Remote' ? 'bi-laptop' : 'bi-building'; ?>"></i>
+                                                    <?php echo htmlspecialchars($job['work_mode']); ?>
                                                 </span>
-                                                <div class="text-muted small mt-1">
-                                                    <?php echo $company['total_positions']; ?> Total Position<?php echo $company['total_positions'] != 1 ? 's' : ''; ?>
-                                                </div>
                                             </td>
                                             <td>
-                                                <div class="d-flex gap-2">
-                                                    <?php if ($company['website']): ?>
-                                                        <a href="<?php echo htmlspecialchars($company['website']); ?>" 
-                                                           class="btn btn-sm btn-outline-secondary"
-                                                           target="_blank">
-                                                            <i class="bi bi-globe"></i> Website
-                                                        </a>
-                                                    <?php endif; ?>
-                                                    <a href="job_listings.php?company=<?php echo $company['id']; ?>" 
-                                                       class="btn btn-sm btn-outline-primary">
-                                                        <i class="bi bi-briefcase"></i> View Jobs
-                                                    </a>
-                                                </div>
+                                                <span class="salary-badge">
+                                                    <i class="bi bi-currency-dollar"></i>
+                                                    <?php echo htmlspecialchars($job['salary_range']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <?php echo time_ago($job['created_at']); ?>
+                                            </td>
+                                            <td>
+                                                <?php if (in_array($job['id'], $applied_jobs)): ?>
+                                                    <button class="btn btn-secondary btn-sm" disabled>
+                                                        <i class="bi bi-check2-circle"></i> Applied
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button class="btn btn-primary apply-btn btn-sm" data-job-id="<?php echo $job['id']; ?>">
+                                                        <i class="bi bi-send"></i> Apply Now
+                                                    </button>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,22 +211,23 @@ $student_name = $_SESSION['student_name'];
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
+    <script src="../Assets/Scripts/alert.js"></script>
+    <script src="../Assets/Scripts/loading.js"></script>
+    <script src="../Assets/Scripts/utils.js"></script>
     <script src="../Assets/Scripts/user.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             // Ensure clean initialization by destroying any existing instance
-            if ($.fn.DataTable.isDataTable('#companiesTable')) {
-                $('#companiesTable').DataTable().destroy();
+            if ($.fn.DataTable.isDataTable('.table')) {
+                $('.table').DataTable().destroy();
             }
             
             // Initialize DataTable with custom configuration
-            $('#companiesTable').DataTable({
+            $('.table').DataTable({
                 pageLength: 10,
-                order: [[0, 'asc']], // Sort by company name ascending
-                language: {
-                    lengthMenu: '_MENU_ entries per page'
-                },
-                dom: 'l<"mb-3">rt<"row"<"col-sm-5"i><"col-sm-7"p>>' // Only show length menu, table, info and pagination
+                order: [[4, 'desc']], // Sort by posted date descending
+                dom: 'rtip', // Only show table, info and pagination
+                searching: false // Disable searching
             });
 
             // Initialize CSRF protection

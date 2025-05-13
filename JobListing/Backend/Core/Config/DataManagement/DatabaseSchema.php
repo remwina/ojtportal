@@ -118,11 +118,10 @@ class DatabaseSchema {
                 expires_at DATE,
                 FOREIGN KEY (company_id) REFERENCES companies(id)
             )",
-              'job_applications' => "CREATE TABLE IF NOT EXISTS job_applications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
+              'job_applications' => "CREATE TABLE IF NOT EXISTS job_applications (                id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
                 job_id INT NOT NULL,
-                status ENUM('pending', 'approved', 'rejected', 'interview') NOT NULL DEFAULT 'pending',
+                status ENUM('pending', 'reviewing', 'interview', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id),
@@ -159,7 +158,18 @@ class DatabaseSchema {
                 expires_at DATETIME NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+            'status_change_logs' => "CREATE TABLE IF NOT EXISTS status_change_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                old_status ENUM('active', 'inactive') NOT NULL,
+                new_status ENUM('active', 'inactive') NOT NULL,
+                changed_by INT NOT NULL,
+                changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (changed_by) REFERENCES users(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         ];
     }
 

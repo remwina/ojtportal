@@ -2,21 +2,24 @@
 class Validators {
     private $errors;
     private $collectedErrors;
+    private $db;
 
     public function __construct() {
         $this->clearAllErrors();
+        require_once __DIR__ . '/Config/DataManagement/DB_Operations.php';
+        $this->db = new SQL_Operations();
     }
 
     private function addToCollectedErrors() {
         if (!empty($this->errors)) {
-            $this->collectedErrors = array_merge($this->collectedErrors ?? [], $this->errors);
+            $this->collectedErrors = array_values(array_merge($this->collectedErrors ?? [], array_filter($this->errors)));
         }
     }
 
     public function getErrors() {
         return empty($this->collectedErrors) 
             ? ["success" => true] 
-            : ["success" => false, "errors" => $this->collectedErrors];
+            : ["success" => false, "errors" => array_values($this->collectedErrors)];
     }
 
     public function clearAllErrors() {
@@ -34,7 +37,8 @@ class Validators {
             
             // Skip validation for initial admin setup if no admins exist
             $adminManager = new AdminsManager();
-            $hasExistingAdmins = count($adminManager->getSuperAdmins()) > 0;
+            $admins = $adminManager->getAllAdmins();
+            $hasExistingAdmins = !empty($admins);
             
             if ($hasExistingAdmins && !$adminManager->canCreateAdmin($_SESSION['admin_id'] ?? 0)) {
                 $this->errors[] = ["field" => "usertype", "message" => "Only super administrators can create admin accounts"];
@@ -79,24 +83,37 @@ class Validators {
 
     public function isValidPassword($password, $confirmPassword = null) {
         $this->errors = [];
+        
         if (empty($password)) {
             $this->errors[] = ["field" => "password", "message" => "Password is required"];
-        } else {
-            if (!preg_match(UPPERCASE_FORMAT, $password)) {
-                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one uppercase letter"];
-            }
-            if (!preg_match(LOWERCASE_FORMAT, $password)) {
-                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one lowercase letter"];
-            }
-            if (!preg_match(DIGIT_FORMAT, $password)) {
-                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one number"];
-            }
-            if (!preg_match(SPECIAL_CHAR_FORMAT, $password)) {
-                $this->errors[] = ["field" => "password", "message" => "Password must contain at least one special character"];
-            }
-            if (strlen($password) < 6) {
-                $this->errors[] = ["field" => "password", "message" => "Password must be at least 6 characters"];
-            }
+            return false;
+        }
+
+        $missing = [];
+        
+        if (!preg_match(UPPERCASE_FORMAT, $password)) {
+            $missing[] = "one uppercase letter";
+        }
+        if (!preg_match(LOWERCASE_FORMAT, $password)) {
+            $missing[] = "one lowercase letter";
+        }
+        if (!preg_match(DIGIT_FORMAT, $password)) {
+            $missing[] = "one number";
+        }
+        if (!preg_match(SPECIAL_CHAR_FORMAT, $password)) {
+            $missing[] = "one special character";
+        }
+        
+        if (count($missing) > 0) {
+            $this->errors[] = ["field" => "password", "message" => "Password must contain " . implode(", ", $missing)];
+            $this->addToCollectedErrors();
+            return false;
+        }
+
+        if (strlen($password) < 6) {
+            $this->errors[] = ["field" => "password", "message" => "Password must be at least 6 characters"];
+            $this->addToCollectedErrors();
+            return false;
         }
 
         if ($confirmPassword !== null) {
@@ -105,9 +122,11 @@ class Validators {
             } elseif ($password !== $confirmPassword) {
                 $this->errors[] = ["field" => "confirm_password", "message" => "Passwords do not match"];
             }
+            $this->addToCollectedErrors();
+            return empty($this->errors);
         }
-        $this->addToCollectedErrors();
-        return empty($this->errors);
+
+        return true;
     }
 
     public function isValidLoginPassword($password) {
@@ -150,6 +169,80 @@ class Validators {
 
         $this->addToCollectedErrors();
         return empty($this->errors);
+    }
+
+    public function checkDuplicateUser($srcode, $email, $userId = null) {
+        $conn = $this->db->getConnection();
+        $stmt = $conn->prepare("CALL sp_check_duplicate_user(?, ?, ?)");
+        $stmt->bind_param("ssi", $srcode, $email, $userId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        if ($result['duplicate']) {
+            $this->errors[] = ["field" => "general", "message" => $result['message']];
+            $this->addToCollectedErrors();
+            return false;
+        }
+        return true;
+    }
+
+    public function checkDuplicateCompany($name, $companyId = null) {
+        $conn = $this->db->getConnection();
+        $stmt = $conn->prepare("CALL sp_check_duplicate_company(?, ?)");
+        $stmt->bind_param("si", $name, $companyId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        if ($result['duplicate']) {
+            $this->errors[] = ["field" => "name", "message" => $result['message']];
+            $this->addToCollectedErrors();
+            return false;
+        }
+        return true;
+    }
+
+    public function checkDuplicateJob($title, $companyId, $jobId = null) {
+        $conn = $this->db->getConnection();
+        $stmt = $conn->prepare("CALL sp_check_duplicate_job(?, ?, ?)");
+        $stmt->bind_param("sii", $title, $companyId, $jobId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        if ($result['duplicate']) {
+            $this->errors[] = ["field" => "title", "message" => $result['message']];
+            $this->addToCollectedErrors();
+            return false;
+        }
+        return true;
+    }
+
+    public function checkDuplicateAdmin($srcode, $email, $adminId = null) {
+        $conn = $this->db->getConnection();
+        
+        // Call the stored procedure to check for duplicates
+        $stmt = $conn->prepare("CALL sp_check_duplicate_admin(?, ?, ?)");
+        $stmt->bind_param("ssi", $srcode, $email, $adminId);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        
+        if ($result['duplicate']) {
+            // Parse and add individual error messages
+            $messages = explode('. ', trim($result['message']));
+            foreach ($messages as $message) {
+                if (!empty($message)) {
+                    if (strpos($message, 'SR Code') !== false) {
+                        $this->errors[] = ["field" => "srcode", "message" => $message];
+                    } elseif (strpos($message, 'Email') !== false) {
+                        $this->errors[] = ["field" => "email", "message" => $message];
+                    } else {
+                        $this->errors[] = ["field" => "general", "message" => $message];
+                    }
+                }
+            }
+            $this->addToCollectedErrors();
+            return false;
+        }
+        return true;
     }
 }
 ?>

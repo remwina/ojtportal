@@ -21,6 +21,7 @@ DROP PROCEDURE IF EXISTS sp_get_user_by_email;
 DROP PROCEDURE IF EXISTS sp_update_user_password;
 DROP PROCEDURE IF EXISTS sp_admin_add_company;
 DROP PROCEDURE IF EXISTS sp_admin_update_company;
+DROP PROCEDURE IF EXISTS sp_admin_update_application_status;
 DROP PROCEDURE IF EXISTS sp_admin_get_dashboard_stats;
 DROP PROCEDURE IF EXISTS sp_admin_force_password_reset;
 DROP PROCEDURE IF EXISTS sp_clear_password_reset_flag;
@@ -28,9 +29,16 @@ DROP PROCEDURE IF EXISTS sp_add_resume;
 DROP PROCEDURE IF EXISTS sp_update_resume;
 DROP PROCEDURE IF EXISTS sp_delete_resume;
 DROP PROCEDURE IF EXISTS sp_get_resume;
+DROP PROCEDURE IF EXISTS sp_update_admin_status;
+DROP PROCEDURE IF EXISTS sp_update_user_status;
+DROP PROCEDURE IF EXISTS sp_check_duplicate_company;
+DROP PROCEDURE IF EXISTS sp_check_duplicate_user;
+DROP PROCEDURE IF EXISTS sp_check_duplicate_job;
+DROP PROCEDURE IF EXISTS sp_check_duplicate_admin;
 
 -- Authentication and User Management
 DELIMITER $$
+
 CREATE PROCEDURE sp_authenticate_user(IN p_email VARCHAR(255))
 BEGIN
     SELECT u.id, u.srcode, u.firstname, u.lastname, u.email, u.password, 
@@ -79,6 +87,233 @@ BEGIN
         force_reset = p_force_reset,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = p_user_id;
+END$$
+
+CREATE PROCEDURE sp_update_user_status(
+    IN p_user_id INT,
+    IN p_status ENUM('active', 'inactive')
+)
+BEGIN
+    DECLARE current_status VARCHAR(10);
+    DECLARE user_type VARCHAR(10);
+    
+    -- Get current status and user type
+    SELECT status, usertype INTO current_status, user_type 
+    FROM users 
+    WHERE id = p_user_id;
+    
+    -- Verify user exists
+    IF current_status IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User not found';
+    END IF;
+    
+    -- Prevent admin management through this procedure
+    IF user_type = 'admin' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot modify admin status through this procedure';
+    END IF;
+    
+    -- Check if trying to change to the same status
+    IF current_status = p_status THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User account is already in the requested status';
+    END IF;
+
+    -- Update the status and log the change
+    INSERT INTO status_change_logs (
+        user_id, 
+        old_status, 
+        new_status, 
+        changed_by
+    ) VALUES (
+        p_user_id, 
+        current_status, 
+        p_status,
+        @admin_id
+    );
+
+    -- Update the status
+    UPDATE users 
+    SET status = p_status,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = p_user_id 
+    AND usertype = 'user';
+END$$
+
+CREATE PROCEDURE sp_check_duplicate_company(
+    IN p_name VARCHAR(100),
+    IN p_id INT
+)
+BEGIN
+    DECLARE duplicate_exists INT;
+    
+    IF p_id IS NULL THEN
+        -- Check for duplicates when adding a new company
+        SELECT COUNT(*) INTO duplicate_exists
+        FROM companies
+        WHERE LOWER(name) = LOWER(p_name);
+    ELSE
+        -- Check for duplicates when updating an existing company
+        SELECT COUNT(*) INTO duplicate_exists
+        FROM companies
+        WHERE LOWER(name) = LOWER(p_name)
+        AND id != p_id;
+    END IF;
+    
+    SELECT 
+        CASE 
+            WHEN duplicate_exists > 0 THEN TRUE
+            ELSE FALSE
+        END as duplicate,
+        CASE 
+            WHEN duplicate_exists > 0 THEN 'A company with this name already exists'
+            ELSE NULL
+        END as message;
+END$$
+
+CREATE PROCEDURE sp_check_duplicate_user(
+    IN p_srcode VARCHAR(9),
+    IN p_email VARCHAR(255),
+    IN p_id INT
+)
+BEGIN
+    DECLARE srcode_exists INT;
+    DECLARE email_exists INT;
+    
+    IF p_id IS NULL THEN
+        -- Check for duplicates when adding a new user
+        SELECT COUNT(*) INTO srcode_exists 
+        FROM users 
+        WHERE srcode = p_srcode;
+        
+        SELECT COUNT(*) INTO email_exists 
+        FROM users 
+        WHERE LOWER(email) = LOWER(p_email);
+    ELSE
+        -- Check for duplicates when updating an existing user
+        SELECT COUNT(*) INTO srcode_exists 
+        FROM users 
+        WHERE srcode = p_srcode 
+        AND id != p_id;
+        
+        SELECT COUNT(*) INTO email_exists 
+        FROM users 
+        WHERE LOWER(email) = LOWER(p_email) 
+        AND id != p_id;
+    END IF;
+    
+    SELECT 
+        CASE 
+            WHEN srcode_exists > 0 OR email_exists > 0 THEN TRUE
+            ELSE FALSE
+        END as duplicate,
+        CASE 
+            WHEN srcode_exists > 0 AND email_exists > 0 THEN 'Both SR Code and Email are already in use'
+            WHEN srcode_exists > 0 THEN 'SR Code is already in use'
+            WHEN email_exists > 0 THEN 'Email is already in use'
+            ELSE NULL
+        END as message;
+END$$
+
+CREATE PROCEDURE sp_check_duplicate_job(
+    IN p_title VARCHAR(100),
+    IN p_company_id INT,
+    IN p_id INT
+)
+BEGIN
+    DECLARE duplicate_exists INT;
+    
+    IF p_id IS NULL THEN
+        -- Check for duplicates when adding a new job
+        SELECT COUNT(*) INTO duplicate_exists
+        FROM job_listings
+        WHERE LOWER(title) = LOWER(p_title)
+        AND company_id = p_company_id;
+    ELSE
+        -- Check for duplicates when updating an existing job
+        SELECT COUNT(*) INTO duplicate_exists
+        FROM job_listings
+        WHERE LOWER(title) = LOWER(p_title)
+        AND company_id = p_company_id
+        AND id != p_id;
+    END IF;
+    
+    SELECT 
+        CASE 
+            WHEN duplicate_exists > 0 THEN TRUE
+            ELSE FALSE
+        END as duplicate,
+        CASE 
+            WHEN duplicate_exists > 0 THEN 'A job with this title already exists for this company'
+            ELSE NULL
+        END as message;
+END$$
+
+CREATE PROCEDURE sp_check_duplicate_admin(
+    IN p_srcode VARCHAR(9),
+    IN p_email VARCHAR(255),
+    IN p_id INT
+)
+BEGIN
+    DECLARE srcode_exists INT;
+    DECLARE email_exists INT;
+    DECLARE srcode_exists_user INT;
+    DECLARE email_exists_user INT;
+    
+    IF p_id IS NULL THEN
+        -- Check for duplicates in administrators table when adding
+        SELECT COUNT(*) INTO srcode_exists 
+        FROM administrators 
+        WHERE srcode = p_srcode;
+        
+        SELECT COUNT(*) INTO email_exists 
+        FROM administrators 
+        WHERE LOWER(email) = LOWER(p_email);
+        
+        -- Check for duplicates in users table
+        SELECT COUNT(*) INTO srcode_exists_user 
+        FROM users 
+        WHERE srcode = p_srcode;
+        
+        SELECT COUNT(*) INTO email_exists_user 
+        FROM users 
+        WHERE LOWER(email) = LOWER(p_email);
+    ELSE
+        -- Check for duplicates in administrators table when updating
+        SELECT COUNT(*) INTO srcode_exists 
+        FROM administrators 
+        WHERE srcode = p_srcode 
+        AND id != p_id;
+        
+        SELECT COUNT(*) INTO email_exists 
+        FROM administrators 
+        WHERE LOWER(email) = LOWER(p_email) 
+        AND id != p_id;
+        
+        -- Check for duplicates in users table
+        SELECT COUNT(*) INTO srcode_exists_user 
+        FROM users 
+        WHERE srcode = p_srcode;
+        
+        SELECT COUNT(*) INTO email_exists_user 
+        FROM users 
+        WHERE LOWER(email) = LOWER(p_email);
+    END IF;
+    
+    SELECT 
+        CASE 
+            WHEN srcode_exists > 0 OR email_exists > 0 OR
+                 srcode_exists_user > 0 OR email_exists_user > 0 THEN TRUE
+            ELSE FALSE
+        END as duplicate,
+        CASE 
+            WHEN (srcode_exists > 0 OR srcode_exists_user > 0) AND 
+                 (email_exists > 0 OR email_exists_user > 0) THEN 'Both SR Code and Email are already in use'
+            WHEN srcode_exists > 0 OR srcode_exists_user > 0 THEN 'SR Code is already in use'
+            WHEN email_exists > 0 OR email_exists_user > 0 THEN 'Email is already in use'
+            ELSE NULL
+        END as message;
 END$$
 
 -- Company Management
@@ -301,9 +536,9 @@ BEGIN
     SELECT LAST_INSERT_ID() as application_id;
 END$$
 
-CREATE PROCEDURE sp_update_application_status(
+CREATE PROCEDURE sp_admin_update_application_status(
     IN p_application_id INT,
-    IN p_status ENUM('pending', 'shortlisted', 'interviewed', 'offered', 'accepted', 'rejected')
+    IN p_status ENUM('pending', 'reviewing', 'interview', 'accepted', 'rejected')
 )
 BEGIN
     UPDATE job_applications 
@@ -425,6 +660,45 @@ BEGIN
     SET force_reset = 0,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = p_user_id;
+END$$
+
+-- Admin status update
+CREATE PROCEDURE sp_update_admin_status(
+    IN p_admin_id INT,
+    IN p_status ENUM('active', 'inactive')
+)
+BEGIN
+    DECLARE active_admins INT;
+    DECLARE current_status VARCHAR(10);
+    
+    -- Get current status
+    SELECT status INTO current_status 
+    FROM administrators 
+    WHERE id = p_admin_id;
+    
+    -- Check if trying to change to the same status
+    IF current_status = p_status THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Administrator account is already in the requested status';
+    END IF;
+
+    -- If deactivating, check if it's the last active admin
+    IF p_status = 'inactive' THEN
+        SELECT COUNT(*) INTO active_admins
+        FROM administrators
+        WHERE status = 'active' AND id != p_admin_id;
+        
+        IF active_admins = 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Cannot deactivate the last active administrator';
+        END IF;
+    END IF;
+
+    -- Update the status
+    UPDATE administrators
+    SET status = p_status,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = p_admin_id;
 END$$
 
 DELIMITER ;

@@ -243,7 +243,7 @@
                         hasErrors = true;
                     }
                 });
-                
+
                 if (hasErrors) return;
 
                 const submitButton = this.querySelector('button[type="submit"]');
@@ -258,27 +258,38 @@
 
                     const formData = new FormData(this);
                     formData.append('action', 'register');
+
+                    // Get fresh CSRF token before request
+                    const token = await CSRFManager.ensureValidToken();
+                    formData.append('csrf_token', token);
+
                     const data = await Utils.Api.makeApiCall('../Backend/Core/MAIN.php', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: {
+                            'X-Csrf-Token': token,
+                            'Accept': 'application/json'
+                        }
                     });
                     
-                    if (!data.success) {
+                    if (!data || !data.success) {
                         // Handle validation errors first
-                        if (data.errors) {
+                        if (data && data.errors) {
                             data.errors.forEach(error => {
                                 if (error.field === 'general') {
-                                    // Show general error in a popup
-                                    throw new Error(error.message);
+                                    throw new Error(error.message || 'Registration failed');
                                 } else {
                                     const errorElement = document.getElementById(error.field + '-error');
                                     if (errorElement) {
                                         errorElement.textContent = error.message;
+                                        const input = document.getElementById(error.field);
+                                        if (input) input.classList.add('error');
                                     }
                                 }
                             });
+                            return; // Don't redirect if we have field errors
                         }
-                        throw new Error(data.message || 'Registration failed');
+                        throw new Error(data?.message || 'Registration failed. Please try again.');
                     }
                     
                     // Update CSRF token if provided
@@ -286,22 +297,35 @@
                         CSRFManager.setToken(data.csrf_token);
                     }
                     
+                    // Show success message
                     await Swal.fire({
                         icon: 'success',
-                        title: 'Success!',
-                        text: 'Registration successful! Please login to continue.',
+                        title: 'Registration Successful!',
+                        text: data.message || 'Your account has been created successfully.',
                         showConfirmButton: true,
+                        confirmButtonText: 'Proceed to Login',
                         allowOutsideClick: false
                     });
                     
+                    // Clear form and redirect
+                    this.reset();
                     window.location.href = 'login.html';
+                    
                 } catch (error) {
                     console.error('Registration error:', error);
-                    Swal.fire({
+                    await Swal.fire({
                         icon: 'error',
                         title: 'Registration Failed',
-                        text: error.message || 'An error occurred during registration'
+                        text: error.message || 'An error occurred during registration. Please try again.',
+                        confirmButtonText: 'Try Again'
                     });
+                } finally {
+                    // Reset button state if we haven't redirected
+                    if (document.body) {
+                        submitButton.disabled = false;
+                        btnText.style.display = 'inline-block';
+                        btnLoader.style.display = 'none';
+                    }
                 }
             });
         });

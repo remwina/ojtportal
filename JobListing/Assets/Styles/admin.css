@@ -1531,3 +1531,113 @@ body {
 .dataTables_filter {
     margin: 0;
 }
+
+/* Job Listings Table Styles */
+.table-responsive {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.table th {
+    background: var(--gray-50);
+    color: var(--gray-700);
+    font-weight: 600;
+    padding: 1rem;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.company-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 1px solid var(--gray-200);
+}
+
+.requirements-cell {
+    max-width: 300px;
+}
+
+.badge-remote {
+    background-color: var(--info);
+    color: var(--white);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.badge-onsite {
+    background-color: var(--success);
+    color: var(--white);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.salary-badge {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.salary-badge i {
+    color: var(--success);
+}
+
+.apply-btn {
+    min-width: 100px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Table hover effects */
+.table-hover tbody tr:hover {
+    background-color: var(--gray-50);
+    cursor: pointer;
+}
+
+/* Make sure the card containing the table has proper spacing */
+.card {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+}
+
+/* Style the select dropdown */
+.form-select {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    background-color: var(--white);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.form-select:hover {
+    border-color: var(--gray-400);
+}
+
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(200, 16, 46, 0.1);
+}

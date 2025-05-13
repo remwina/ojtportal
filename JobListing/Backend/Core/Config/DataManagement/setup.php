@@ -625,7 +625,7 @@ $setupManager->handleSetup();
                 </ol>
             </div>
 
-            <div class="text-center">
+            <div class="text-center"></div>
                 <button id="goToLoginBtn" class="setup-btn">Go to Login Page</button>
             </div>
 

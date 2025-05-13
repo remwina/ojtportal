@@ -318,7 +318,7 @@ $isSuperAdmin = isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-info btn-sm view-btn" data-id="<?php echo $admin['id']; ?>">
+                                        <button class="btn btn-info btn-sm view-admin-btn" data-id="<?php echo $admin['id']; ?>">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                         <?php if ($isSuperAdmin): ?>
@@ -426,6 +426,7 @@ $isSuperAdmin = isset($_SESSION['is_super_admin']) && $_SESSION['is_super_admin'
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="../Assets/Scripts/csrf.js"></script>
+    <script src="../Assets/Scripts/utils.js"></script>
     <script src="../Assets/Scripts/admin.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {

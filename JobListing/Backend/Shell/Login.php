@@ -59,6 +59,33 @@ class Login {
                 ];
             }
 
+            // Check for account deactivation before validating password
+            if ($user['status'] === 'inactive') {
+                $deactivationMessage = '<div style="font-size: 1.1rem; margin-bottom: 1.5rem;">Your account has been deactivated for security purposes.</div>' .
+                    '<div class="deactivation-notice" style="font-size: 1rem;">' .
+                    '<h6 style="font-size: 1.1rem; font-weight: 600; margin: 1rem 0 0.75rem; color: #344767;">What this means:</h6>' .
+                    '<ul style="margin-bottom: 1rem; padding-left: 1.5rem;">' .
+                    '<li style="margin-bottom: 0.5rem;">You currently cannot access your account</li>' .
+                    '<li style="margin-bottom: 0.5rem;">All your data and history are preserved</li>' .
+                    '<li style="margin-bottom: 0.5rem;">Your account can be reactivated by an administrator</li>' .
+                    '</ul>' .
+                    '<h6 style="font-size: 1.1rem; font-weight: 600; margin: 1rem 0 0.75rem; color: #344767;">Next steps:</h6>' .
+                    '<p style="font-size: 1rem; line-height: 1.5;">Please contact your system administrator to request reactivation.</p>' .
+                    '</div>';
+                
+                return [
+                    'success' => false,
+                    'isDeactivated' => true,
+                    'error_type' => 'account_deactivated',
+                    'title' => 'Account Deactivated',
+                    'message' => $deactivationMessage,
+                    'icon' => 'warning',
+                    'modalWidth' => '500px',
+                    'confirmButtonText' => 'I Understand',
+                    'confirmButtonColor' => '#6c757d'
+                ];
+            }
+
             if (!password_verify($password, $user['password'])) {
                 return [
                     'success' => false,
@@ -66,14 +93,6 @@ class Login {
                     'errors' => [
                         ['field' => 'password', 'message' => 'Incorrect password']
                     ]
-                ];
-            }
-
-            // Only check for deactivation after credentials are validated
-            if ($user['status'] === 'inactive') {
-                return [
-                    'success' => false,
-                    'isDeactivated' => true
                 ];
             }
 

@@ -16,6 +16,50 @@
             --delay-2: 2;
             --delay-3: 3;
         }
+        
+        /* Form validation styles */
+        .error-message {
+            color: #dc3545;
+            font-size: 0.85em;
+            margin-top: 0.25rem;
+            display: none;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+        
+        .error-message.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        input.error {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        
+        input.error:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        
+        /* Loading state animations */
+        .btn-loader {
+            display: none;
+        }
+        
+        .btn-text, .btn-loader {
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Sweet Alert customizations for general alerts only */
+        .swal2-popup {
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        /* Let the backend control deactivation notice styling */
     </style>
 </head>
 
@@ -172,81 +216,68 @@
                         throw new Error('Invalid response from server');
                     }
                     
-                    // First check for deactivation - nothing else matters if account is deactivated
-                    if (data.isDeactivated) {
-                        // Clear any validation errors
-                        document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
-                        
+                    // Check for deactivation before anything else - uses backend message
+                    if (data.isDeactivated === true) {
+                        Utils.Form.clearErrors();
                         await Swal.fire({
-                            icon: 'error',
-                            title: 'Account Deactivated',
-                            html: 'Your account is currently deactivated. If you believe this is an error, please contact the system administrator for assistance.<br><br>' +
-                                  '<strong>Effects of deactivation:</strong><br>' +
-                                  '• You cannot log in to your account<br>' +
-                                  '• Your active job applications remain in the system<br>' +
-                                  '• Your profile data is preserved<br><br>' +
-                                  '<strong>What should you do?</strong><br>' +
-                                  '• Contact the system administrator<br>' +
-                                  '• Provide your account details for verification<br>' +
-                                  '• Wait for account reactivation',
-                            showCancelButton: true,
-                            confirmButtonText: 'Contact Administrator',
-                            cancelButtonText: 'Close',
-                            confirmButtonColor: '#0d6efd',
-                            cancelButtonColor: '#6c757d',
+                            title: data.title,
+                            html: data.message,
+                            icon: data.icon,
+                            confirmButtonText: 'I Understand', 
                             allowOutsideClick: false
                         });
                         return;
                     }
                     
                     if (data.success) {
-                        // Update CSRF token if provided
-                        if (data.csrf_token) {
-                            CSRFManager.setToken(data.csrf_token);
-                        }
-                        
-                        // Show success message and redirect
                         await Swal.fire({
-                            icon: 'success',
-                            title: 'Login Successful',
-                            text: 'Redirecting...',
-                            timer: 1500,
-                            showConfirmButton: false,
+                            icon: data.icon || 'success',
+                            title: data.title || 'Login Successful',
+                            text: data.message || 'Redirecting...',
+                            timer: data.timer || 1500,
+                            showConfirmButton: data.showConfirmButton !== undefined ? data.showConfirmButton : false,
                             allowOutsideClick: false
                         });
                         
-                        // Redirect based on user type
-                        window.location.href = data.usertype === 'admin' ? 
-                            '../Admin/Dashboard.php' : 
-                            '../Dashboard/dashboard.php';
+                        // Redirect based on user type with animation timing
+                        setTimeout(() => {
+                            window.location.href = data.redirect || 
+                                (data.usertype === 'admin' ? '../Admin/Dashboard.php' : '../Dashboard/dashboard.php');
+                        }, data.timer || 1500);
                         return;
                     }
                     
-                    // Handle validation errors only if not deactivated
                     if (data.errors && Array.isArray(data.errors) && !data.isDeactivated) {
                         data.errors.forEach(error => {
                             const errorElement = document.getElementById(`${error.field}-error`);
                             if (errorElement) {
                                 errorElement.textContent = error.message;
+                                errorElement.style.display = 'block';
+                                
+                                const input = document.getElementById(error.field);
+                                if (input) {
+                                    input.classList.add('error');
+                                    input.addEventListener('input', function() {
+                                        this.classList.remove('error');
+                                        errorElement.textContent = '';
+                                        errorElement.style.display = 'none';
+                                    }, { once: true });
+                                }
                             }
                         });
                     } else if (!data.isDeactivated) {
-                        // Show more specific error message for login failures
-                        let errorTitle = 'Login Failed';
-                        let errorMessage = data.message || 'Invalid email or password. Please check your credentials and try again.';
-                        
-                        // Check for specific error types from backend
-                        if (data.error_type === 'email_not_found') {
-                            errorMessage = 'No account found with this email address. Please check your email or register for a new account.';
-                        } else if (data.error_type === 'invalid_password') {
-                            errorMessage = 'Incorrect password. Please try again.';
-                        }
-                        
                         await Swal.fire({
-                            icon: 'error',
-                            title: errorTitle,
-                            text: errorMessage,
-                            confirmButtonText: 'Try Again'
+                            icon: data.icon || 'error',
+                            title: data.title || 'Login Failed',
+                            text: data.message || 'Invalid email or password',
+                            confirmButtonText: data.confirmButtonText || 'Try Again',
+                            confirmButtonColor: data.confirmButtonColor || '#dc3545',
+                            showClass: {
+                                popup: 'animate__animated animate__fadeIn'
+                            },
+                            hideClass: {
+                                popup: 'animate__animated animate__fadeOut'
+                            }
                         });
                     }
                     
@@ -259,10 +290,28 @@
                         confirmButtonText: 'Try Again'
                     });
                 } finally {
-                    // Re-enable form and hide loading state
-                    submitButton.disabled = false;
-                    if (btnText) btnText.style.display = 'inline-block';
-                    if (btnLoader) btnLoader.style.display = 'none';
+                    // Re-enable form and hide loading state with animation
+                    setTimeout(() => {
+                        submitButton.disabled = false;
+                        if (btnText) {
+                            btnText.style.opacity = '0';
+                            btnText.style.display = 'inline-block';
+                            requestAnimationFrame(() => {
+                                btnText.style.opacity = '1';
+                                btnText.style.transition = 'opacity 0.3s ease';
+                            });
+                        }
+                        if (btnLoader) {
+                            btnLoader.style.opacity = '1';
+                            btnLoader.style.transition = 'opacity 0.3s ease';
+                            setTimeout(() => {
+                                btnLoader.style.opacity = '0';
+                                setTimeout(() => {
+                                    btnLoader.style.display = 'none';
+                                }, 300);
+                            }, 0);
+                        }
+                    }, 300); // Delay to ensure smooth animation
                 }
             });
         });

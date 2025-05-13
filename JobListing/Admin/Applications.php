@@ -65,12 +65,15 @@ class ApplicationsManager {
                                            u.firstname, 
                                            u.lastname, 
                                            u.email,
-                                           sr.id as resume_id
+                                           sr.id as resume_id,
+                                           sr.resume_name
                                     FROM job_applications ja 
                                     JOIN job_listings jl ON ja.job_id = jl.id
                                     JOIN companies c ON jl.company_id = c.id
                                     JOIN users u ON ja.user_id = u.id
-                                    LEFT JOIN student_resumes sr ON sr.user_id = ja.user_id
+                                    LEFT JOIN student_resumes sr ON sr.user_id = ja.user_id AND sr.id = (
+                                        SELECT id FROM student_resumes WHERE user_id = ja.user_id ORDER BY uploaded_at DESC LIMIT 1
+                                    )
                                     ORDER BY ja.created_at DESC");
         return $result->fetch_all(MYSQLI_ASSOC);
     }
@@ -182,7 +185,8 @@ $applications = $manager->getAllApplications();
                                     <td><?php echo date('M d, Y', strtotime($app['created_at'])); ?></td>
                                     <td>
                                         <select class="form-select form-select-sm status-select" 
-                                                data-id="<?php echo $app['id']; ?>">
+                                                data-id="<?php echo $app['id']; ?>"
+                                                data-current-status="<?php echo $app['status']; ?>">
                                             <option value="pending" <?php echo $app['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
                                             <option value="reviewing" <?php echo $app['status'] === 'reviewing' ? 'selected' : ''; ?>>Reviewing</option>
                                             <option value="interview" <?php echo $app['status'] === 'interview' ? 'selected' : ''; ?>>Interview</option>
@@ -202,7 +206,8 @@ $applications = $manager->getAllApplications();
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary me-2 view-btn" 
+                                        <button class="btn btn-sm btn-outline-primary me-2 view-application-btn
+                                        " 
                                                 data-id="<?php echo $app['id']; ?>"
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#viewApplicationModal">

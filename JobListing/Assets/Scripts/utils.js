@@ -4,11 +4,32 @@
 const ErrorHandler = {
     async handleError(error, title = 'Error!', defaultMessage = 'An error occurred') {
         console.error('Error:', error);
+        
+        // If error is an object with special properties (like deactivation error)
+        if (typeof error === 'object' && !(error instanceof Error)) {
+            await Swal.fire({
+                title: error.title || title,
+                [/<[a-z][\s\S]*>/i.test(error.message) ? 'html' : 'text']: error.message,
+                icon: error.icon || 'error',
+                confirmButtonColor: error.confirmButtonColor || '#dc3545',
+                confirmButtonText: error.confirmButtonText || 'OK',
+                width: error.modalWidth,
+                allowOutsideClick: false
+            });
+            return;
+        }
+
+        // Handle regular Error objects
+        const message = error.message || defaultMessage;
+        const containsHtml = /<[a-z][\s\S]*>/i.test(message);
+        
         await Swal.fire({
             title: title,
-            text: error.message || defaultMessage,
+            [containsHtml ? 'html' : 'text']: message,
             icon: 'error',
-            confirmButtonColor: '#dc3545'
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'OK',
+            allowOutsideClick: false
         });
     },
 
@@ -39,11 +60,20 @@ const FormUtils = {
         if (errorElement) {
             errorElement.textContent = message;
             errorElement.style.display = 'block';
+            errorElement.classList.add('show');
             
             const inputField = document.querySelector(`[name="${fieldname.toLowerCase()}"]`);
             if (inputField) {
                 inputField.classList.add('error');
-                inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Auto-hide error when user starts typing
+                inputField.addEventListener('input', () => {
+                    inputField.classList.remove('error');
+                    errorElement.classList.remove('show');
+                    setTimeout(() => {
+                        errorElement.style.display = 'none';
+                        errorElement.textContent = '';
+                    }, 300);
+                }, { once: true });
             }
         }
     },
@@ -55,8 +85,35 @@ const FormUtils = {
         const btnText = button.querySelector('.btn-text');
         const btnLoader = button.querySelector('.btn-loader');
         
-        if (btnText) btnText.style.display = isLoading ? 'none' : 'inline-block';
-        if (btnLoader) btnLoader.style.display = isLoading ? 'inline-block' : 'none';
+        if (btnText) {
+            if (isLoading) {
+                btnText.style.opacity = '0';
+                setTimeout(() => {
+                    btnText.style.display = 'none';
+                }, 300);
+            } else {
+                btnText.style.opacity = '0';
+                btnText.style.display = 'inline-block';
+                requestAnimationFrame(() => {
+                    btnText.style.opacity = '1';
+                    btnText.style.transition = 'opacity 0.3s ease';
+                });
+            }
+        }
+        
+        if (btnLoader) {
+            if (isLoading) {
+                btnLoader.style.display = 'inline-block';
+                requestAnimationFrame(() => {
+                    btnLoader.style.opacity = '1';
+                });
+            } else {
+                btnLoader.style.opacity = '0';
+                setTimeout(() => {
+                    btnLoader.style.display = 'none';
+                }, 300);
+            }
+        }
     }
 };
 
@@ -70,58 +127,77 @@ const ApiUtils = {
      */
     async makeApiCall(url, options = {}) {
         try {
+            // Ensure we have a valid CSRF token
             const token = await CSRFManager.ensureValidToken();
-            
-            // Set up headers with CSRF token
-            options.headers = {
-                'X-Csrf-Token': token,
-                'Accept': 'application/json',
-                ...options.headers
-            };
-            options.credentials = 'same-origin';
-
-            // Handle form data
-            if (options.body instanceof FormData) {
-                options.body.append('csrf_token', token);
-            } else if (typeof options.body === 'object' && !(options.body instanceof FormData)) {
-                const formData = new FormData();
-                for (const [key, value] of Object.entries(options.body)) {
-                    formData.append(key, value);
-                }
-                formData.append('csrf_token', token);
-                options.body = formData;
+            if (!token) {
+                throw new Error('Security token is missing. Please refresh the page.');
             }
+            
+            // Add CSRF token to headers
+            options.headers = {
+                ...options.headers,
+                'X-Csrf-Token': token,
+                'Accept': 'application/json'
+            };
 
             const response = await fetch(url, options);
-            
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', errorText);
-                let errorMessage;
-                try {
-                    const errorData = JSON.parse(errorText);
-                    errorMessage = errorData.message || `Server error (${response.status})`;
-                } catch (e) {
-                    errorMessage = `Server error (${response.status}): ${errorText}`;
-                }
-                throw new Error(errorMessage);
+                throw new Error(`Network error: ${response.status}`);
             }
             
             const data = await response.json();
+            
+            // Handle error responses
+            if (!data.success) {
+                // Handle validation errors
+                if (data.errors && Array.isArray(data.errors)) {
+                    throw {
+                        isValidationError: true,
+                        errors: data.errors,
+                        message: data.message || 'Validation failed'
+                    };
+                }
+                
+                // Handle account deactivation
+                if (data.isDeactivated) {
+                    return {
+                        success: false,
+                        isDeactivated: true,
+                        message: data.message,
+                        icon: data.icon || 'warning',
+                        title: data.title || 'Account Deactivated',
+                        confirmButtonText: data.confirmButtonText || 'I Understand',
+                        confirmButtonColor: data.confirmButtonColor || '#6c757d',
+                        modalWidth: data.modalWidth || '500px'
+                    };
+                }
+                
+                // Handle general errors
+                throw new Error(data.message || 'Request failed');
+            }
 
-            // Update CSRF token if provided in response
+            // Update CSRF token if provided
             if (data.csrf_token) {
                 CSRFManager.setToken(data.csrf_token);
             }
 
-            if (!data.success) {
-                throw new Error(data.message || 'API call failed');
-            }
-            
             return data;
         } catch (error) {
             console.error('API call failed:', error);
-            throw error;
+            
+            // Pass through structured error objects
+            if (typeof error === 'object' && error !== null && !Array.isArray(error) &&
+                (error.isValidationError || error.isDeactivated || error.icon)) {
+                throw error;
+            }
+            
+            // Handle standard Error objects
+            if (error instanceof Error) {
+                throw error;
+            }
+            
+            // Handle any other errors
+            throw new Error(error.message || 'An unexpected error occurred');
         }
     },
 
